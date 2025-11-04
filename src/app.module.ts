@@ -10,6 +10,8 @@ import { RoleModule } from './role/role.module';
 import configuration from './config/configuration';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -36,6 +38,24 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       },
       inject: [ConfigService],
     }),
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: 'smtp.office365.com', 
+          port: 587,
+          secure: false,
+          auth: {
+            user: configService.get<string>('MAIL_USER'),
+            pass: configService.get<string>('MAIL_PASSWORD'),
+          },
+        },
+        defaults: {
+          from: `"INTRANET ASHA"<${configService.get<string>('MAIL_USER')}>`,
+        },
+      }),
+    }),
     AuthenticationModule, 
     UsersModule, 
     DocumentsModule, 
@@ -43,7 +63,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     BenefitsModule, 
     NewsModule, 
     CountryModule, 
-    RoleModule
+    RoleModule, MailModule, 
   ],
   controllers: [],
   exports:[TypeOrmModule],

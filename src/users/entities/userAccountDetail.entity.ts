@@ -31,7 +31,8 @@ export class UserAccountDetail {
   @Column({ name: 'user_account_id' })
   userAccountId: string;
 
-  @OneToOne(() => User, (user) => user.userId)
+  @OneToOne(() => User, (user) => user.userDetail)
   @JoinColumn({ name: 'user_account_id' })
   userAccount: User;
+
 }

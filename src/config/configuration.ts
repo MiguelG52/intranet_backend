@@ -1,5 +1,6 @@
 export default () => ({
     port: parseInt(process.env.SERVER_PORT ?? "3000", 10),
+    JWTSecret: process.env.JWT_SECRET_KEY,
     database: {
         sincronize:true,
         host: process.env.DATABASE_HOST,
@@ -9,4 +10,10 @@ export default () => ({
         name: process.env.DATABASE_NAME,
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     },
+    email:{
+        host: process.env.EMAIL_HOST,
+        port: parseInt(process.env.EMAIL_PORT ?? "587", 10),
+        user: process.env.EMAIL_USER,
+        password: process.env.EMAIL_PASSWORD,
+    }
 });
