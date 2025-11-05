@@ -12,6 +12,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { MailModule } from './mail/mail.module';
+import { PositionsModule } from './positions/positions.module';
+import { AreasModule } from './areas/areas.module';
 
 @Module({
   imports: [
@@ -63,7 +65,7 @@ import { MailModule } from './mail/mail.module';
     BenefitsModule, 
     NewsModule, 
     CountryModule, 
-    RoleModule, MailModule, 
+    RoleModule, MailModule, PositionsModule, AreasModule, 
   ],
   controllers: [],
   exports:[TypeOrmModule],

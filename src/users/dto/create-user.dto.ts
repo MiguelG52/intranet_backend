@@ -24,7 +24,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   email: string;
 
-  @IsStrongPassword()
+  @IsStrongPassword(undefined,{ message: 'La contraseña debe tener al menos 8 caracteres, un simbolo y un número' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres, un simbolo y un número' })
   password: string;
 
@@ -33,8 +33,13 @@ export class CreateUserDto {
   roleId: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({message:"El país es obligatorio"})
   countryCode: string;
+
+  @IsUUID()
+  @IsNotEmpty({message:"El puesto es obligatorio"})
+  positionId:string;
+
 
   @ValidateNested() 
   @Type(() => CreateUserDetailDto) 

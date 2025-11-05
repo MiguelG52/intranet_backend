@@ -10,6 +10,6 @@ import { Country } from './entities/country.entity';
   ],
   controllers: [CountryController],
   providers: [CountryService],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule, CountryService],
 })
 export class CountryModule {}

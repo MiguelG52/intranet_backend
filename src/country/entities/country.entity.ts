@@ -8,4 +8,9 @@ export class Country {
 
     @Column({name:"name", length:100, type:"varchar"})
     name:string
+
+    @Column({ name: 'phone_country_code', type: 'varchar', length: 5, nullable: true })
+    phoneCountryCode: string;
+
+    
 }
