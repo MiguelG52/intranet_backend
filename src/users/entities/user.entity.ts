@@ -1,7 +1,8 @@
 import { Country } from '../../country/entities/country.entity';
 import { Role } from '../../role/entities/role.entity';
-import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
+import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToOne, OneToMany } from 'typeorm';
 import { UserAccountDetail } from './userAccountDetail.entity';
+import { UserPosition } from './user-position.entity';
 
 @Entity("user_account")
 export class User {
@@ -58,4 +59,7 @@ export class User {
         { cascade: true }, 
     )
     userDetail: UserAccountDetail
+
+    @OneToMany(() => UserPosition, (userPosition) => userPosition.user)
+    userPositions: UserPosition[];
 }

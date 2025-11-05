@@ -16,12 +16,8 @@ export class CreateUserDetailDto {
   @MaxLength(20)
   phoneNumber?: string;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(10)
-  phoneCountryCode?: string;
 
-  @IsDateString()
+  @IsDateString(undefined, { message: 'La fecha de nacimineto debe estar en formato ISO 8601: AAAA-MM-DD' })
   @IsOptional()
   birthdate?: Date;
 }

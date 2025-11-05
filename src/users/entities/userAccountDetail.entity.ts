@@ -21,8 +21,6 @@ export class UserAccountDetail {
   @Column({ name: 'phone_number', type: 'varchar', length: 20, nullable: true })
   phoneNumber: string;
 
-  @Column({ name: 'phone_country_code', type: 'varchar', length: 10, nullable: true })
-  phoneCountryCode: string;
 
   @Column({ type: 'date', nullable: true })
   birthdate: Date;

@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserAuthDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -9,8 +9,9 @@ import { Role } from 'src/role/entities/role.entity';
 import { Country } from 'src/country/entities/country.entity';
 import { UserAccountDetail } from './entities/userAccountDetail.entity';
 import * as crypto from 'crypto';
-import { MailService } from 'src/mail/mail.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { PositionService } from 'src/positions/positions.service';
+import { UserPosition } from './entities/user-position.entity';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +19,10 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository:Repository<User>,
-    private readonly dataSource: DataSource
+    @InjectRepository(UserPosition)
+    private readonly userPositionRepository:Repository<UserPosition>,
+    private readonly dataSource: DataSource,
+    private readonly positionService: PositionService
   ) {}
 
   private generateVerificationToken(): string {
@@ -39,11 +43,18 @@ export class UsersService {
       roleId,
       countryCode,
       detail,
+      positionId
     } = createUserDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
     if (existingUser) {
       throw new ConflictException(`El email '${email}' ya está registrado.`);
+    }
+
+    try {
+      await this.positionService.findOne(positionId);
+    } catch (error) {
+      throw new BadRequestException(`El puesto con ID '${positionId}' no existe.`);
     }
 
     const saltRounds = 10;
@@ -53,6 +64,8 @@ export class UsersService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+
+    let savedUser: User;
 
     try {
       const user = this.userRepository.create({
@@ -71,21 +84,26 @@ export class UsersService {
         user.userDetail = userDetail;
       }
       
-      const savedUser = await queryRunner.manager.save(user);
+      savedUser = await queryRunner.manager.save(user);
       
+      //Asignamos al usuario creado a un puesto 
+      const newUserPosition = this.userPositionRepository.create({
+        userId: savedUser.userId,
+        positionId: positionId,
+      });
+      await queryRunner.manager.save(newUserPosition);
       await queryRunner.commitTransaction();
       
-      
-      return savedUser; 
-
     } catch (error) {
       await queryRunner.rollbackTransaction();
       console.error(error);
-      throw new InternalServerErrorException('Error al crear la cuenta de usuario.');
+      throw new InternalServerErrorException('Error al crear la cuenta de usuario. Intenalo de nuevo mas tarde.');
       
     } finally {
       await queryRunner.release();
     }
+
+    return savedUser; 
   }
 
   findAll() {

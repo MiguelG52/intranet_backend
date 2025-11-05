@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { CountryService } from './country.service';
 import { CreateCountryDto } from './dto/create-country.dto';
 import { UpdateCountryDto } from './dto/update-country.dto';
@@ -7,9 +7,10 @@ import { UpdateCountryDto } from './dto/update-country.dto';
 export class CountryController {
   constructor(private readonly countryService: CountryService) {}
 
-  @Post()
-  create(@Body() createCountryDto: CreateCountryDto) {
-    return this.countryService.create(createCountryDto);
+  @Post('register')
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() createCountryDto: CreateCountryDto) {
+    return await this.countryService.create(createCountryDto);
   }
 
   @Get()
@@ -18,8 +19,8 @@ export class CountryController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.countryService.findOne(+id);
+  findOne(@Param('id') countryCode: string) {
+    return this.countryService.findOne(countryCode);
   }
 
   @Patch(':id')
