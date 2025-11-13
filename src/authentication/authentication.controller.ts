@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, Request } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
@@ -22,9 +22,15 @@ export class AuthenticationController {
     return this.authenticationService.signIn(signInData);
   }
 
+  @Get('me')
+  @HttpCode(200)
+  getProfile(@Request() req) {
+    const userId = req.user.sub;
+    return this.authenticationService.getUserProfile(userId);
+  }
 
   @Public()
-  @Post('refresh-token')
+  @Post('refresh')
   async refreshToken(@Body('refreshToken') refreshToken: string) {
     return this.authenticationService.refreshToken(refreshToken);
   }
