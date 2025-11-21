@@ -9,6 +9,8 @@ import { compare, hash } from 'bcryptjs';
 import { UserSignInInfo } from './responses/sign-in.reponse';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { MailService } from 'src/mail/mail.service';
+import { User } from 'src/users/entities/user.entity';
+import { UserProfileResponse } from './responses/user-profile.response';
 
 @Injectable()
 export class AuthenticationService {
@@ -165,6 +167,29 @@ export class AuthenticationService {
     return { accessToken };
   }
 
+  async getUserProfile(userId: string):Promise<UserProfileResponse | null> {
+    const user = await this.UserService.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+    const userData: UserProfileResponse = {
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      role: {
+        roleId: user.role.roleId,
+        roleName: user.role.roleName,
+      },
+      country: {
+        code: user.country?.code,
+        name: user.country?.name,
+        phoneCountryCode: user.country?.phoneCountryCode,
+      },
+      isActive: user.isActive,
+    }
+    return userData;
+  }
   update(id: number, updateAuthenticationDto: UpdateAccountDto) {
     return `This action updates a #${id} authentication`;
   }

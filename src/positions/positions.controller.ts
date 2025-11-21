@@ -4,9 +4,7 @@ import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 import { RoleGuard } from 'src/authentication/guard/role.guard';
 import { Roles } from 'src/authentication/decorators/role.decoratos';
-import { Role } from 'src/role/entities/role.entity';
 import { ParseUUIDPipe } from '@nestjs/common';
-import { HttpCode, HttpStatus } from '@nestjs/common';
 import { Role as RolesEnum } from 'src/authentication/enum/role.enum';
 
 @Controller('position')

@@ -120,10 +120,32 @@ export class UsersService {
       },
     });
   }
+
+  /**
+   * Retorna TODA la informacion del usuario (incluyendo password, token 2fa).
+   */
   findOneById(userId:string):Promise<User | null> {
     return this.userRepository.findOne({where:{userId}}) 
   }
 
+  /**
+   * Retorna la inforacion del usuario junto con su detalle, rol, pais. 
+   * sin informacion sensible (password, token 2fa).
+   */
+  async findUserById(userId:string):Promise<User | null> {
+    const user = await this.userRepository.findOne({
+      where:{userId}, 
+      relations: {
+        userDetail: true,
+        role: true,
+        country: true,
+      }
+    });
+    if(!user) {
+      throw new NotFoundException(`Usuario con ID no encontrado.`);
+    }
+    return user;
+  }
   
   /**
    * Esta función es para que la usen otros SERVICIOS (como AuthService).
