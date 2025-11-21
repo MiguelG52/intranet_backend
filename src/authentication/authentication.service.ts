@@ -172,7 +172,23 @@ export class AuthenticationService {
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
-    return user;
+    const userData: UserProfileResponse = {
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      lastname: user.lastname,
+      role: {
+        roleId: user.role.roleId,
+        roleName: user.role.roleName,
+      },
+      country: {
+        code: user.country?.code,
+        name: user.country?.name,
+        phoneCountryCode: user.country?.phoneCountryCode,
+      },
+      isActive: user.isActive,
+    }
+    return userData;
   }
   update(id: number, updateAuthenticationDto: UpdateAccountDto) {
     return `This action updates a #${id} authentication`;

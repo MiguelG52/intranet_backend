@@ -8,7 +8,7 @@ export class UserProfileResponse {
   name: string;
   lastname: string;
   role: RoleResponse;
-  country?: CountryResponse | null;
+  country: CountryResponse | null;
   isActive: boolean;
   userDetail?: UserDetailResponse | null;
 }
