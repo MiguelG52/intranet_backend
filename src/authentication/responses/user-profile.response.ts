@@ -11,4 +11,12 @@ export class UserProfileResponse {
   country: CountryResponse | null;
   isActive: boolean;
   userDetail?: UserDetailResponse | null;
+  position?: {
+    id: string;
+    title: string;
+    area: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 
@@ -8,9 +8,24 @@ export class UsersController {
 
   
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+
+  @Get('find-all')
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('positionId') positionId?: string,
+    @Query('search') search?: string,
+    @Query('orderBy') orderBy: string = 'name',
+    @Query('order') order: 'ASC' | 'DESC' = 'ASC',
+  ) {
+    return this.usersService.findAll({ 
+      page: Number(page), 
+      limit: Number(limit), 
+      positionId, 
+      search, 
+      orderBy, 
+      order 
+    });
   }
 
   @Get('find-one/:id')

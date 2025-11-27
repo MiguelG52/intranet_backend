@@ -113,4 +113,12 @@ export class PositionService {
     }
     return { message: 'Posición eliminada exitosamente.' };
   }
+
+  async findByArea(areaId: string) {
+    const positions = await this.positionRepository.find({
+      where: { area: { areaId },  },
+      relations: { area: true },
+    });
+    return positions;
+  }
 }
