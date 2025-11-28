@@ -32,7 +32,7 @@ export class MailService {
    * @param user El usuario recién creado.
    * @param token El token de verificación.
    */
-  async sendAccountVerificationEmail(user: User, token: string) {
+  async sendAccountVerificationEmail(user: User, token: string, temporaryPassword: string) {
     
     const verificationUrl = `https://tu-frontend.com/verify-account?token=${token}`;
 
@@ -43,6 +43,8 @@ export class MailService {
         <p>¡Hola ${user.name}!</p>
         <p>Gracias por registrarte. Por favor, haz clic en el siguiente enlace para verificar tu cuenta:</p>
         <a href="${verificationUrl}" target="_blank">Verificar mi cuenta</a>
+        <p>Tu contraseña temporal es: <strong>${temporaryPassword}</strong></p>
+        <p>Después de iniciar sesión, te recomendamos cambiarla desde tu perfil.</p>
         <p>Si no te registraste, por favor ignora este correo.</p>
       `,
     });

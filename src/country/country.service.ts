@@ -17,7 +17,6 @@ export class CountryService {
   ){}
 
   async create(createCountryDto: CreateCountryDto) {
-    //normaliza los datos
     const code = createCountryDto.code.toUpperCase();
     const name = createCountryDto.name.charAt(0).toUpperCase() + createCountryDto.name.slice(1).toLowerCase();
     const phoneCountryCode = createCountryDto.phoneCountryCode;
@@ -39,8 +38,12 @@ export class CountryService {
     }
   }
 
-  findAll() {
-    return `This action returns all country`;
+  async findAll() {
+    const countries = await this.countryRepository.find();
+    if (!countries || countries.length === 0) {
+      throw new NotFoundException('No se encontraron países');
+    }
+    return countries;
   }
 
   async findOne(countryCode: string) {

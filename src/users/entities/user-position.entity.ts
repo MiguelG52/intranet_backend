@@ -21,7 +21,7 @@ export class UserPosition {
 
   // --- Relaciones ---
 
-  @ManyToOne(() => User, (user) => user.userPositions)
+  @ManyToOne(() => User, (user) => user.userPositions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

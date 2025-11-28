@@ -85,12 +85,13 @@ export class AuthenticationService {
         refreshToken: refreshToken,
       };
   }
-  async registerAccount(createUserData: CreateUserDto) { 
-    const newUser = await this.UserService.create(createUserData);
+  async registerAccount(createUserData: CreateUserDto) {
+    const { user: newUser, plainPassword } = await this.UserService.create(createUserData);
     try {
       await this.mailerService.sendAccountVerificationEmail(
         newUser,
-        newUser.token2fa
+        newUser.token2fa,
+        plainPassword,
       );
     } catch (emailError) {
 
@@ -100,7 +101,7 @@ export class AuthenticationService {
       );
     }
     return {
-      message: 'Cuenta creada. Se ha enviado un correo de verificación.'
+      message: 'Cuenta creada. Se ha enviado un correo de verificación con la contraseña temporal.'
     };
 }
 

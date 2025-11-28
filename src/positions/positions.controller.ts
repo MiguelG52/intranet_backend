@@ -44,4 +44,16 @@ export class PositionController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.positionService.remove(id);
   }
+
+  @Get('area/:areaId')
+  @Roles(RolesEnum.Admin, RolesEnum.Worker)
+  findByArea(@Param('areaId', ParseUUIDPipe) areaId: string) {
+    return this.positionService.findByArea(areaId);
+  }
+
+  @Get('structure/org-chart')
+  @Roles(RolesEnum.Admin, RolesEnum.Worker)
+  getOrgChart() {
+    return this.positionService.getOrgChart();
+  }
 }

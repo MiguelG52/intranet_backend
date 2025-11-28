@@ -113,4 +113,70 @@ export class PositionService {
     }
     return { message: 'Posición eliminada exitosamente.' };
   }
+
+  async findByArea(areaId: string) {
+    return this.positionRepository.find({
+      where: { areaId },
+      order: { title: 'ASC' },
+    });
+  }
+
+  async getOrgChart() {
+    const positions = await this.positionRepository.find({
+      relations: {
+        area: true,
+        userPositions: {
+          user: {
+            userDetail: true,
+          },
+        },
+      },
+      select: {
+        positionId: true,
+        title: true,
+        managerId: true,
+        area: {
+          areaId: true,
+          areaName: true,
+        },
+        userPositions: {
+          id: true,
+          user: {
+            userId: true,
+            name: true,
+            lastname: true,
+            email: true,
+            userDetail: {
+              profilePicture: true,
+            },
+          },
+        },
+      },
+    });
+
+    const positionMap = new Map();
+    const roots: any[] = [];
+
+    // Initialize map with formatted objects
+    positions.forEach((pos) => {
+      positionMap.set(pos.positionId, {
+        ...pos,
+        children: [],
+        users: pos.userPositions.map((up) => up.user),
+      });
+    });
+
+    // Link children to parents
+    positions.forEach((pos) => {
+      const mappedPos = positionMap.get(pos.positionId);
+      if (pos.managerId && positionMap.has(pos.managerId)) {
+        const parent = positionMap.get(pos.managerId);
+        parent.children.push(mappedPos);
+      } else {
+        roots.push(mappedPos);
+      }
+    });
+
+    return roots;
+  }
 }

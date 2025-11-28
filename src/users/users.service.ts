@@ -12,6 +12,9 @@ import * as crypto from 'crypto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { PositionService } from 'src/positions/positions.service';
 import { UserPosition } from './entities/user-position.entity';
+import { UserProfileResponse } from 'src/authentication/responses/user-profile.response';
+import { UserDetailResponse } from './responses/user-detail-response';
+import { UsersQueryParamsDto } from './dto/find-all-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -29,15 +32,44 @@ export class UsersService {
     return crypto.randomBytes(32).toString('hex');
   }
 
+  private generateTemporaryPassword(length = 12): string {
+    // Crea una contraseña temporal que incluya al menos una mayúscula, una minúscula, un dígito y un símbolo.
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+    const digits = '23456789';
+    const symbols = '!@#$%^&*';
+
+    const categories = [uppercase, lowercase, digits, symbols];
+    const passwordCharacters = categories.map((category) =>
+      category[crypto.randomInt(0, category.length)],
+    );
+
+    const allCharacters = categories.join('');
+    for (let i = passwordCharacters.length; i < length; i++) {
+      passwordCharacters.push(
+        allCharacters[crypto.randomInt(0, allCharacters.length)],
+      );
+    }
+
+    for (let i = passwordCharacters.length - 1; i > 0; i--) {
+      const j = crypto.randomInt(0, i + 1);
+      [passwordCharacters[i], passwordCharacters[j]] = [
+        passwordCharacters[j],
+        passwordCharacters[i],
+      ];
+    }
+
+    return passwordCharacters.join('');
+  }
+
   /**
    * Crea una nueva cuenta de usuario y su detalle asociado.
    * Asigna un token de verificación pero NO envía el correo.
    * Retorna la entidad User completa.
    */
-  async create(createUserDto: CreateUserDto) { 
+  async create(createUserDto: CreateUserDto): Promise<{ user: User; plainPassword: string }> {
     const {
       email,
-      password,
       name,
       lastname,
       roleId,
@@ -58,7 +90,8 @@ export class UsersService {
     }
 
     const saltRounds = 10;
-    const hashedPassword = await hash(password, saltRounds);
+  const plainPassword = this.generateTemporaryPassword();
+  const hashedPassword = await hash(plainPassword, saltRounds);
     const verificationToken = this.generateVerificationToken();
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -103,11 +136,83 @@ export class UsersService {
       await queryRunner.release();
     }
 
-    return savedUser; 
+    return {
+      user: savedUser,
+      plainPassword,
+    };
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll(params: UsersQueryParamsDto) {
+    const { page, limit, positionId, search, orderBy = 'name', order = 'ASC' } = params;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+    // Relaciones
+    queryBuilder.leftJoinAndSelect('user.role', 'role');
+    queryBuilder.leftJoinAndSelect('user.country', 'country');
+    queryBuilder.leftJoinAndSelect('user.userDetail', 'userDetail');
+    queryBuilder.leftJoinAndSelect('user.userPositions', 'userPositions');
+    queryBuilder.leftJoinAndSelect('userPositions.position', 'position');
+    queryBuilder.leftJoinAndSelect('position.area', 'area');
+
+    // Filtrar por posicion
+    if (positionId) {
+      queryBuilder.andWhere('userPositions.positionId = :positionId', { positionId });
+    }
+
+    // Busqueda por nombre, apellido o ID
+    const searchStr = search ?? '';
+    if (searchStr) {
+      queryBuilder.andWhere(
+        '(user.name ILIKE :search OR user.lastname ILIKE :search OR CAST(user.userId AS TEXT) ILIKE :search)',
+        { search: `%${searchStr}%` }
+      );
+    }
+
+    // Orden
+    const validSortColumns = ['name', 'lastname', 'email', 'createAt'];
+    const sortColumn = validSortColumns.includes(orderBy) ? `user.${orderBy}` : 'user.name';
+    
+    queryBuilder.orderBy(sortColumn, order);
+
+    // Paginacion
+    queryBuilder.skip(skip).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    const cleanData: UserProfileResponse[] = data.map((user) => {
+      const primaryPosition = user.userPositions?.[0]?.position;
+      
+      return {
+        userId: user.userId,
+        email: user.email,
+        name: user.name,
+        lastname: user.lastname,
+        role: user.role as Role,
+        country: user.country as Country,
+        isActive: user.isActive,
+        userDetail: user.userDetail as UserDetailResponse,
+        position: primaryPosition ? {
+          id: primaryPosition.positionId,
+          title: primaryPosition.title,
+          area: primaryPosition.area ? {
+            id: primaryPosition.area.areaId,
+            name: primaryPosition.area.areaName
+          } : null
+        } : null
+      };
+    });
+
+    return {
+      data: cleanData,
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
   }
 
   findOneByEmail(email:string):Promise<User | null> {
@@ -174,7 +279,11 @@ export class UsersService {
   }
   
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    const result = await this.userRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
+    }
+    return { message: 'Usuario eliminado correctamente' };
   }
 }
