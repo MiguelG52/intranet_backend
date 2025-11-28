@@ -50,4 +50,10 @@ export class PositionController {
   findByArea(@Param('areaId', ParseUUIDPipe) areaId: string) {
     return this.positionService.findByArea(areaId);
   }
+
+  @Get('structure/org-chart')
+  @Roles(RolesEnum.Admin, RolesEnum.Worker)
+  getOrgChart() {
+    return this.positionService.getOrgChart();
+  }
 }

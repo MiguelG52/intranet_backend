@@ -3,9 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsStrongPassword,
   IsUUID,
-  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -23,10 +21,6 @@ export class CreateUserDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @IsStrongPassword(undefined,{ message: 'La contraseña debe tener al menos 8 caracteres, un simbolo y un número' })
-  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres, un simbolo y un número' })
-  password: string;
 
   @IsUUID()
   @IsNotEmpty()
