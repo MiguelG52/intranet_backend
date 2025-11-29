@@ -14,6 +14,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { MailModule } from './mail/mail.module';
 import { PositionsModule } from './positions/positions.module';
 import { AreasModule } from './areas/areas.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { AreasModule } from './areas/areas.module';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
     AuthenticationModule, 
     UsersModule, 
     DocumentsModule, 

@@ -14,7 +14,7 @@ export class NewsController {
 
   @Get()
   findAll() {
-    return this.newsService.findAll();
+    return this.newsService.findNews();
   }
 
   @Get(':id')
