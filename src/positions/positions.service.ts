@@ -28,22 +28,17 @@ export class PositionService {
     }
 
     //    comprueba si existe un puesto con ese título
-    //    SOLAMENTE en las áreas que tengan el MISMO countryCode.
+    //    SOLAMENTE en la misma área.
     const existingPosition = await this.positionRepository.exists({
       where: {
         title: createPositionDto.title,
-        area: {
-          countryCode: area.countryCode 
-        }
-      },
-      relations: {
-        area: true 
+        areaId: createPositionDto.areaId
       }
     });
     
     if (existingPosition) {
       throw new BadRequestException(
-        `Ya existe una posición con el nombre '${createPositionDto.title}'${area.countryCode ? `para el país ${area.country.name}` : " en región Global"}'.`
+        `Ya existe una posición con el nombre '${createPositionDto.title}' en el área seleccionada.`
       );
     }
     
