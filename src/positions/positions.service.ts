@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +12,7 @@ export class PositionService {
   constructor(
     @InjectRepository(Position)
     private readonly positionRepository: Repository<Position>,
+    @Inject(forwardRef(() => AreaService))
     private readonly areaService: AreaService, 
   ) {}
 
@@ -173,5 +174,9 @@ export class PositionService {
     });
 
     return roots;
+  }
+
+  async removeByArea(areaId: string) {
+    await this.positionRepository.delete({ areaId });
   }
 }
