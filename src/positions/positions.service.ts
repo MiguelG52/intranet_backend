@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +12,7 @@ export class PositionService {
   constructor(
     @InjectRepository(Position)
     private readonly positionRepository: Repository<Position>,
+    @Inject(forwardRef(() => AreaService))
     private readonly areaService: AreaService, 
   ) {}
 
@@ -28,22 +29,17 @@ export class PositionService {
     }
 
     //    comprueba si existe un puesto con ese título
-    //    SOLAMENTE en las áreas que tengan el MISMO countryCode.
+    //    SOLAMENTE en la misma área.
     const existingPosition = await this.positionRepository.exists({
       where: {
         title: createPositionDto.title,
-        area: {
-          countryCode: area.countryCode 
-        }
-      },
-      relations: {
-        area: true 
+        areaId: createPositionDto.areaId
       }
     });
     
     if (existingPosition) {
       throw new BadRequestException(
-        `Ya existe una posición con el nombre '${createPositionDto.title}'${area.countryCode ? `para el país ${area.country.name}` : " en región Global"}'.`
+        `Ya existe una posición con el nombre '${createPositionDto.title}' en el área seleccionada.`
       );
     }
     
@@ -178,5 +174,9 @@ export class PositionService {
     });
 
     return roots;
+  }
+
+  async removeByArea(areaId: string) {
+    await this.positionRepository.delete({ areaId });
   }
 }

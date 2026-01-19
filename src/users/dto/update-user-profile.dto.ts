@@ -10,4 +10,6 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @MaxLength(100)
   lastname?: string;
+
+  
 }

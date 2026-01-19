@@ -1,4 +1,5 @@
-import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDateString, IsEmail, IsOptional, IsString, IsUUID, MaxLength, ValidateNested } from 'class-validator';
 
 export class CreateUserDetailDto {
   @IsString()
@@ -20,4 +21,37 @@ export class CreateUserDetailDto {
   @IsDateString(undefined, { message: 'La fecha de nacimineto debe estar en formato ISO 8601: AAAA-MM-DD' })
   @IsOptional()
   birthdate?: Date;
+}
+
+export class UpdateUserAdminDto {
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  lastname?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @IsUUID()
+  @IsOptional()
+  roleId?: string;
+
+  @IsString()
+  @IsOptional()
+  countryCode?: string;
+
+  @IsUUID()
+  @IsOptional()
+  positionId?: string;
+
+  @ValidateNested()
+  @IsOptional()
+  @Type(() => CreateUserDetailDto)
+  detail?: CreateUserDetailDto;
 }

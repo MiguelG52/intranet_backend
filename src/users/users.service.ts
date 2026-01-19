@@ -15,6 +15,7 @@ import { UserPosition } from './entities/user-position.entity';
 import { UserProfileResponse } from 'src/authentication/responses/user-profile.response';
 import { UserDetailResponse } from './responses/user-detail-response';
 import { UsersQueryParamsDto } from './dto/find-all-user.dto';
+import { UpdateUserAdminDto } from './dto/create-user-detail.dto';
 
 @Injectable()
 export class UsersService {
@@ -271,11 +272,12 @@ export class UsersService {
   async updateProfile(
     userId: string,
     updateDto: UpdateUserProfileDto,
-  ): Promise<User> {
+  ) {
     const user = await this.userRepository.findOneByOrFail({ userId });
-    Object.assign(user, updateDto);
-    
-    return this.userRepository.save(user);
+    await this.userRepository.update(userId, updateDto);
+    return {
+      user, message: 'Perfil actualizado correctamente'
+    };
   }
   
 
@@ -285,5 +287,83 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
     }
     return { message: 'Usuario eliminado correctamente' };
+  }
+
+
+  async updateUserAdmin(userId: string, updateDto: UpdateUserAdminDto) {
+    const { 
+      roleId, 
+      countryCode, 
+      positionId, 
+      detail, 
+      ...basicData 
+    } = updateDto;
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+
+      const user = await queryRunner.manager.findOne(User, { 
+        where: { userId },
+        relations: { userDetail: true }
+      });
+
+      if (!user) throw new NotFoundException(`Usuario no encontrado.`);
+
+      // Actualizamos datos básicos
+      Object.assign(user, basicData);
+
+      // Actualizamos Relaciones Directas (Rol y País)
+      if (roleId) user.role = { roleId } as unknown as Role;
+      if (countryCode) user.country = { code: countryCode } as unknown as Country;
+
+      // Actualizamos el Detalle
+      if (detail) {
+        if (!user.userDetail) {
+          user.userDetail = queryRunner.manager.create(UserAccountDetail, detail);
+        } else {
+          Object.assign(user.userDetail, detail);
+        }
+        await queryRunner.manager.save(user.userDetail);
+      }
+
+      await queryRunner.manager.save(user);
+
+      if (positionId) {
+        const positionExists = await this.positionService.findOne(positionId);
+        if (!positionExists) throw new BadRequestException('El puesto indicado no existe');
+
+        // Buscamos si ya tiene una asignación en la tabla intermedia
+        const currentPosition = await queryRunner.manager.findOne(UserPosition, {
+            where: { userId }
+        });
+
+        if (currentPosition) {
+            currentPosition.positionId = positionId;
+            await queryRunner.manager.save(currentPosition);
+        } else {
+            const newPosition = queryRunner.manager.create(UserPosition, {
+                userId,
+                positionId
+            });
+            await queryRunner.manager.save(newPosition);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return { message: 'Usuario actualizado correctamente' };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      console.error(error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error al actualizar el usuario');
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

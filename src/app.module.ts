@@ -14,6 +14,9 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { MailModule } from './mail/mail.module';
 import { PositionsModule } from './positions/positions.module';
 import { AreasModule } from './areas/areas.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RssModule } from './rss/rss.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -58,6 +61,8 @@ import { AreasModule } from './areas/areas.module';
         },
       }),
     }),
+    ScheduleModule.forRoot(),
+    CacheModule.register(),
     AuthenticationModule, 
     UsersModule, 
     DocumentsModule, 
@@ -65,7 +70,7 @@ import { AreasModule } from './areas/areas.module';
     BenefitsModule, 
     NewsModule, 
     CountryModule, 
-    RoleModule, MailModule, PositionsModule, AreasModule, 
+    RoleModule, MailModule, PositionsModule, AreasModule, RssModule, 
   ],
   controllers: [],
   exports:[TypeOrmModule],

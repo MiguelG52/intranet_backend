@@ -3,16 +3,21 @@ import { CreateBenefitDto } from './dto/create-benefit.dto';
 import { UpdateBenefitDto } from './dto/update-benefit.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Benefit } from './entities/benefit.entity';
+import { BenefitType } from './entities/benefit-type.entity';
 import { Repository } from 'typeorm';
 import { QueryParamsDto } from 'src/common/dto/query-params.dto';
 import { last } from 'rxjs';
+import { CreateBenefitTypeDto } from './dto/create-benefit-type.dto';
 
 @Injectable()
 export class BenefitsService {
+  
 
   constructor(
     @InjectRepository(Benefit)
     private readonly benefitRepository:Repository<Benefit>,
+    @InjectRepository(BenefitType)
+    private readonly benefitTypeRepository:Repository<BenefitType>,
   ) {}
 
 
@@ -135,5 +140,62 @@ export class BenefitsService {
     }
 
     return { message: 'Beneficio eliminado correctamente' };
+  }
+
+
+  // --- BENEFIT TYPES ---
+
+  /**
+   * Crea un nuevo tipo de beneficio.
+   * Valida que no exista otro tipo de beneficio con el mismo título.
+   * @param createBenefitTypeDto Datos del tipo de beneficio a crear.
+   * @returns Mensaje de éxito.
+   */
+  async createBenefitType(createBenefitTypeDto: CreateBenefitTypeDto) {
+    const { title } = createBenefitTypeDto;
+    const exists = await this.benefitTypeRepository.existsBy({ title });
+    if (exists) {
+      throw new ConflictException("Ya existe un tipo de beneficio con ese título");
+    }
+    const newBenefitType = this.benefitTypeRepository.create(createBenefitTypeDto);
+    await this.benefitTypeRepository.save(newBenefitType);
+    return { message: 'Tipo de beneficio creado correctamente' };
+  }
+
+  /**
+   * Obtiene una lista de todos los tipos de beneficio.
+   * @returns Lista de tipos de beneficio.
+   */
+  async findAllBenefitTypes() {
+    return this.benefitTypeRepository.find({ order: { title: 'ASC' } });
+  }
+
+  /**
+   * Actualiza un tipo de beneficio existente.
+   * @param id ID del tipo de beneficio a actualizar.
+   * @param updateBenefitTypeDto Datos a actualizar.
+   * @returns Mensaje de éxito.
+   * @throws NotFoundException Si el tipo de beneficio no existe.
+   */
+  async updateBenefitType(id: string, updateBenefitTypeDto: Partial<CreateBenefitTypeDto>) {
+    const result = await this.benefitTypeRepository.update(id, updateBenefitTypeDto);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Tipo de beneficio con ID '${id}' no encontrado.`);
+    }
+    return { message: 'Tipo de beneficio actualizado correctamente' };
+  }
+
+  /**
+   * Elimina un tipo de beneficio por su ID.
+   * @param id ID del tipo de beneficio a eliminar.
+   * @returns Mensaje de éxito.
+   * @throws NotFoundException Si el tipo de beneficio no existe.
+   */
+  async deleteBenefitType(id: string) {
+    const result = await this.benefitTypeRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Tipo de beneficio con ID '${id}' no encontrado.`);
+    }
+    return { message: 'Tipo de beneficio eliminado correctamente' };
   }
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PositionService } from './positions.service';
 import { PositionController } from './positions.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,7 +9,7 @@ import { CountryModule } from 'src/country/country.module';
 @Module({
   imports: [
     CountryModule,
-    AreasModule,
+    forwardRef(() => AreasModule),
     TypeOrmModule.forFeature([Position])
   ],
   controllers: [PositionController],

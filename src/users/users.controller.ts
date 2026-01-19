@@ -4,6 +4,7 @@ import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import { RoleGuard } from 'src/authentication/guard/role.guard';
 import { Roles } from 'src/authentication/decorators/role.decoratos';
 import { Role } from 'src/authentication/enum/role.enum';
+import { UpdateUserAdminDto } from './dto/create-user-detail.dto';
 
 @Controller('users')
 @UseGuards(RoleGuard)
@@ -43,9 +44,17 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
   */
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserProfileDto) {
+
+  @Patch('profile/:id')
+  updateProfile(@Param('id') id: string, @Body() updateUserDto: UpdateUserProfileDto) {
     return this.usersService.updateProfile(id, updateUserDto);
+  }
+
+  
+  @Roles(Role.Admin)
+  @Patch('update/:id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserAdminDto) {
+    return this.usersService.updateUserAdmin(id, updateUserDto);
   }
 
   @Delete(':id')

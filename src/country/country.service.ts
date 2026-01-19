@@ -59,11 +59,31 @@ export class CountryService {
     return country
   }
 
-  update(id: number, updateCountryDto: UpdateCountryDto) {
-    return `This action updates a #${id} country`;
+  async update(code: string, updateCountryDto: UpdateCountryDto) {
+    const country = await this.findOne(code);
+    
+    try {
+      await this.countryRepository.update(country.code, updateCountryDto);
+      return {
+        message: 'País actualizado correctamente',
+        data: { ...country, ...updateCountryDto }
+      };
+    } catch (error) {
+      this.logger.error('Error actualizando el país', error);
+      throw new ExceptionsHandler();
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} country`;
+  async remove(code: string) {
+    const country = await this.findOne(code);
+    try {
+      await this.countryRepository.delete(country.code);
+      return {
+        message: 'País eliminado correctamente'
+      };
+    } catch (error) {
+      this.logger.error('Error eliminando el país', error);
+      throw new ExceptionsHandler();
+    }
   }
 }

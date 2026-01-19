@@ -9,8 +9,8 @@ export class NewsAudience {
     @Column({ name: 'news_id', type: 'uuid', nullable: false })
     newsId:string
     
-    //delimiuta a noticia or su audiencia por código de país
-    @Column({ name: 'country_code', type: 'varchar', length: 5, nullable: false })
+    //delimita la noticia por su publico objetivo (pais)
+    @Column({ name: 'country_code', type: 'varchar', length: 5, nullable: true })
     countryCode: string;
 
     @Column({ name: 'is_pinned', default: false })

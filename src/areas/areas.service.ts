@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from './entities/area.entity';
+import { PositionService } from 'src/positions/positions.service';
 import { Repository } from 'typeorm';
 import { CountryService } from 'src/country/country.service';
 
@@ -11,6 +12,8 @@ export class AreaService {
   constructor(
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
+    @Inject(forwardRef(() => PositionService))
+    private readonly positionService: PositionService,
     private readonly countryService:CountryService,
   ) {}
 
@@ -82,13 +85,17 @@ export class AreaService {
   }
 
   async update(id: string, updateAreaDto: UpdateAreaDto) {
-    if (updateAreaDto.countryCode) {
-      await this.countryService.findOne(updateAreaDto.countryCode);
+    // Si el countryCode es un string vacío, lo tratamos como undefined (Global)
+    const countryCode = updateAreaDto.countryCode === '' ? undefined : updateAreaDto.countryCode;
+
+    if (countryCode) {
+      await this.countryService.findOne(countryCode);
     }
     
     const area = await this.areaRepository.preload({
       areaId: id,
       ...updateAreaDto,
+      countryCode,
     });
 
     if (!area) {
@@ -98,6 +105,9 @@ export class AreaService {
   }
 
   async remove(id: string) {
+    // Eliminar posiciones asociadas primero
+    await this.positionService.removeByArea(id);
+
     const result = await this.areaRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Área con ID '${id}' no encontrada.`);
