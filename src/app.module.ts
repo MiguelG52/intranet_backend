@@ -17,6 +17,8 @@ import { AreasModule } from './areas/areas.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RssModule } from './rss/rss.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { APP_GUARD } from '@nestjs/core';
+import { DevApiKeyGuard } from './authentication/guard/dev-api-key.guard';
 
 @Module({
   imports: [
@@ -31,13 +33,9 @@ import { CacheModule } from '@nestjs/cache-manager';
         const dbConfig = configService.get('database');
         return {
           type: 'postgres',
-          host: dbConfig.host,
-          port: dbConfig.port,
-          username: dbConfig.user,
-          password: dbConfig.password,
-          database: dbConfig.name,
+          url: dbConfig.url,
           entities: dbConfig.entities,
-          synchronize: dbConfig.sincronize,
+          synchronize: dbConfig.synchronize,
           autoLoadEntities: true,
         };
       },
@@ -73,6 +71,12 @@ import { CacheModule } from '@nestjs/cache-manager';
     RoleModule, MailModule, PositionsModule, AreasModule, RssModule, 
   ],
   controllers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: DevApiKeyGuard,
+    },
+  ],
   exports:[TypeOrmModule],
 })
 export class AppModule {}
