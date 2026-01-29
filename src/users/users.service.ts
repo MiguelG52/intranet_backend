@@ -84,10 +84,12 @@ export class UsersService {
       throw new ConflictException(`El email '${email}' ya está registrado.`);
     }
 
-    try {
-      await this.positionService.findOne(positionId);
-    } catch (error) {
-      throw new BadRequestException(`El puesto con ID '${positionId}' no existe.`);
+    if(positionId){
+      try {
+        await this.positionService.findOne(positionId);
+      } catch (error) {
+        throw new BadRequestException(`El puesto con ID '${positionId}' no existe.`);
+      }
     }
 
     const saltRounds = 10;
@@ -121,11 +123,14 @@ export class UsersService {
       savedUser = await queryRunner.manager.save(user);
       
       //Asignamos al usuario creado a un puesto 
-      const newUserPosition = this.userPositionRepository.create({
-        userId: savedUser.userId,
-        positionId: positionId,
-      });
-      await queryRunner.manager.save(newUserPosition);
+      if(positionId){
+        const newUserPosition = this.userPositionRepository.create({
+          userId: savedUser.userId,
+          positionId: positionId,
+        });
+        await queryRunner.manager.save(newUserPosition);
+      }
+      
       await queryRunner.commitTransaction();
       
     } catch (error) {

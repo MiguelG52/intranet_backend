@@ -87,6 +87,7 @@ export class AuthenticationService {
   }
   async registerAccount(createUserData: CreateUserDto) {
     const { user: newUser, plainPassword } = await this.UserService.create(createUserData);
+    console.log("contraseña temporal generada:", plainPassword);
     try {
       await this.mailerService.sendAccountVerificationEmail(
         newUser,
