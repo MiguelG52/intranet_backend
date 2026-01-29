@@ -31,8 +31,8 @@ export class CreateUserDto {
   countryCode: string;
 
   @IsUUID()
-  @IsNotEmpty({message:"El puesto es obligatorio"})
-  positionId:string;
+  @IsOptional()
+  positionId?:string;
 
 
   @ValidateNested() 

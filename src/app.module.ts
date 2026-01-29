@@ -37,6 +37,7 @@ import { DevApiKeyGuard } from './authentication/guard/dev-api-key.guard';
           entities: dbConfig.entities,
           synchronize: dbConfig.synchronize,
           autoLoadEntities: true,
+          ssl: { rejectUnauthorized: false },
         };
       },
       inject: [ConfigService],
