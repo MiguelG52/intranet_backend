@@ -189,6 +189,20 @@ export class AuthenticationService {
         phoneCountryCode: user.country?.phoneCountryCode,
       },
       isActive: user.isActive,
+      userDetail: user.userDetail ? {
+        msTeamsId: user.userDetail.msTeamsId,
+        profilePicture: user.userDetail.profilePicture,
+        phoneNumber: user.userDetail.phoneNumber,
+        birthdate: user.userDetail.birthdate,
+      } : null,
+      position: (user.userPositions && user.userPositions.length > 0) ? {
+        id: user.userPositions[0].position.positionId,
+        title: user.userPositions[0].position.title,
+        area: user.userPositions[0].position.area ? {
+            id: user.userPositions[0].position.area.areaId,
+            name: user.userPositions[0].position.area.areaName
+        } : null
+      } : null
     }
     return userData;
   }

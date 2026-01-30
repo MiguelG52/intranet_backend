@@ -250,6 +250,11 @@ export class UsersService {
         userDetail: true,
         role: true,
         country: true,
+        userPositions: {
+            position: {
+                area: true
+            }
+        }
       }
     });
     if(!user) {
