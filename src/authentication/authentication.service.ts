@@ -136,13 +136,14 @@ export class AuthenticationService {
       throw new UnauthorizedException('No se proporcionó el token de refresco');
     }
 
+
     let payload;
     try {
       payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
     } catch (err) {
-      throw new UnauthorizedException('Token de refresco inválido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
 
     const user = await this.UserService.findOneById(payload.sub);
@@ -155,18 +156,24 @@ export class AuthenticationService {
       throw new UnauthorizedException('Acceso denegado');
     }
 
-    const newPayload = { 
-      sub: user.userId, 
-      email: user.email, 
-      role: user.role.roleName 
-    };
+    const newPayload = { sub: user.userId, email: user.email, role: user.role.roleName };
+    const [newAccessToken, newRefreshToken] = await Promise.all([
+      this.jwtService.signAsync(newPayload, { expiresIn: '15m' }),
+      this.jwtService.signAsync(newPayload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      }),
+    ]);
     
-    const accessToken = await this.jwtService.signAsync(newPayload, {
-      secret: process.env.JWT_SECRET_KEY,
-      expiresIn: '15m',
+    const hashedRefreshToken = await hash(newRefreshToken, 10);
+    await this.UserService.updateAuthFields(user.userId, {
+      refreshToken: hashedRefreshToken,
     });
 
-    return { accessToken };
+    return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
   }
 
   async getUserProfile(userId: string):Promise<UserProfileResponse | null> {

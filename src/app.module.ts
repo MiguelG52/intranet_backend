@@ -72,12 +72,6 @@ import { DevApiKeyGuard } from './authentication/guard/dev-api-key.guard';
     RoleModule, MailModule, PositionsModule, AreasModule, RssModule, 
   ],
   controllers: [],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: DevApiKeyGuard,
-    },
-  ],
   exports:[TypeOrmModule],
 })
 export class AppModule {}
