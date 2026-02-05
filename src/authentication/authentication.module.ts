@@ -15,7 +15,7 @@ import { RoleGuard } from './guard/role.guard';
     JwtModule.registerAsync({
       useFactory: () => ({  
         global: true,
-        secret: configuration().JWTSecret
+        secret: configuration().JWTSecret,
       })
     }),
     MailModule

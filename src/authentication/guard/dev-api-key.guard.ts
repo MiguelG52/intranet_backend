@@ -17,7 +17,7 @@ export class DevApiKeyGuard implements CanActivate {
     }
 
     if (apiKey !== validApiKey) {
-      throw new UnauthorizedException('Dev API Key valida requerida para acceder a entorno de pruebas');
+      throw new UnauthorizedException(' valida requerida para acceder a entorno de pruebas');
     }
 
     return true;
