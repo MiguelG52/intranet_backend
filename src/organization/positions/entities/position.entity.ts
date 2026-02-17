@@ -1,4 +1,4 @@
-import { Area } from 'src/areas/entities/area.entity';
+import { Area } from 'src/organization/areas/entities/area.entity';
 import { UserPosition } from 'src/users/entities/user-position.entity'; 
 import {
   Column,

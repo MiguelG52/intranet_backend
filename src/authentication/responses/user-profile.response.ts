@@ -1,4 +1,4 @@
-import { CountryResponse } from "src/country/response/country.response";
+import { CountryResponse } from "src/organization/country/response/country.response";
 import { RoleResponse } from "src/role/responses/role.response";
 import { UserDetailResponse } from "src/users/responses/user-detail-response";
 

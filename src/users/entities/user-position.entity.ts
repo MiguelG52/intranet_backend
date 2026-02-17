@@ -1,4 +1,4 @@
-import { Position } from 'src/positions/entities/position.entity'; // Ajusta la ruta
+import { Position } from 'src/organization/positions/entities/position.entity'; // Ajusta la ruta
 import {
   Entity,
   JoinColumn,

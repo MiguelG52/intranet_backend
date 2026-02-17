@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { BenefitType } from "./benefit-type.entity";
-import { Country } from "src/country/entities/country.entity";
+import { Country } from "src/organization/country/entities/country.entity";
 
 @Entity("benefit")
 export class Benefit {

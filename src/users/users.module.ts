@@ -3,15 +3,16 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { CountryModule } from 'src/country/country.module';
+import { CountryModule } from 'src/organization/country/country.module';
 import { UserAccountDetail } from './entities/userAccountDetail.entity';
 import { MailModule } from 'src/mail/mail.module';
 import { UserPosition } from './entities/user-position.entity';
-import { PositionsModule } from 'src/positions/positions.module';
+import { PositionsModule } from 'src/organization/positions/positions.module';
+import { UserFunctionalAssignment } from './entities/user-functional-assigment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserAccountDetail, UserPosition, UserPosition]),
+    TypeOrmModule.forFeature([User, UserAccountDetail, UserPosition, UserPosition, UserFunctionalAssignment]),
     CountryModule,
     PositionsModule
   ],

@@ -3,9 +3,9 @@ import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Area } from './entities/area.entity';
-import { PositionService } from 'src/positions/positions.service';
+import { PositionService } from 'src/organization/positions/positions.service';
 import { Repository } from 'typeorm';
-import { CountryService } from 'src/country/country.service';
+import { CountryService } from 'src/organization/country/country.service';
 
 @Injectable()
 export class AreaService {

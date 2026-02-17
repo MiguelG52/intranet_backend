@@ -4,8 +4,8 @@ import { UpdatePositionDto } from './dto/update-position.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Position } from './entities/position.entity';
 import { Repository } from 'typeorm';
-import { AreaService } from 'src/areas/areas.service';
-import { Area } from 'src/areas/entities/area.entity';
+import { AreaService } from 'src/organization/areas/areas.service';
+import { Area } from 'src/organization/areas/entities/area.entity';
 
 @Injectable()
 export class PositionService {
