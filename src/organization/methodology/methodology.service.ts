@@ -1,0 +1,56 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Methodology } from './entities/methodology.entity';
+import { CreateMethodologyDto } from './dto/create-methodology.dto';
+import { UpdateMethodologyDto } from './dto/update-methodology.dto';
+
+@Injectable()
+export class MethodologyService {
+  constructor(
+    @InjectRepository(Methodology)
+    private methodologyRepository: Repository<Methodology>,
+  ) {}
+
+  async create(createDto: CreateMethodologyDto): Promise<Methodology> {
+    const methodology = this.methodologyRepository.create(createDto);
+    return this.methodologyRepository.save(methodology);
+  }
+
+  async findAll(): Promise<Methodology[]> {
+    return this.methodologyRepository.find({
+      relations: ['coordination', 'coordination.areaCoordinations', 'coordination.areaCoordinations.area'],
+    });
+  }
+
+  async findOne(id: string): Promise<Methodology> {
+    const methodology = await this.methodologyRepository.findOne({
+      where: { methodologyId: id },
+      relations: ['coordination', 'teams'],
+    });
+
+    if (!methodology) {
+      throw new NotFoundException(`Methodology with ID ${id} not found`);
+    }
+
+    return methodology;
+  }
+
+  async findByCoordination(coordinationId: string): Promise<Methodology[]> {
+    return this.methodologyRepository.find({
+      where: { coordinationId },
+      relations: ['coordination'],
+    });
+  }
+
+  async update(id: string, updateDto: UpdateMethodologyDto): Promise<Methodology> {
+    const methodology = await this.findOne(id);
+    Object.assign(methodology, updateDto);
+    return this.methodologyRepository.save(methodology);
+  }
+
+  async remove(id: string): Promise<void> {
+    const methodology = await this.findOne(id);
+    await this.methodologyRepository.remove(methodology);
+  }
+}

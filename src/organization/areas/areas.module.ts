@@ -3,8 +3,8 @@ import { AreaService } from './areas.service';
 import { AreasController } from './areas.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Area } from './entities/area.entity';
-import { CountryModule } from 'src/country/country.module';
-import { PositionsModule } from 'src/positions/positions.module';
+import { CountryModule } from 'src/organization/country/country.module';
+import { PositionsModule } from 'src/organization/positions/positions.module';
 
 @Module({
   imports:[

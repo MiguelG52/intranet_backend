@@ -1,9 +1,10 @@
-import { Country } from '../../country/entities/country.entity';
+import { Country } from '../../organization/country/entities/country.entity';
 import { Role } from '../../role/entities/role.entity';
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, OneToOne, OneToMany } from 'typeorm';
 import { UserAccountDetail } from './userAccountDetail.entity';
 import { UserPosition } from './user-position.entity';
 import { News } from 'src/news/entities/news.entity';
+import { UserFunctionalAssignment } from './user-functional-assigment.entity';
 
 @Entity("user_account")
 export class User {
@@ -66,4 +67,7 @@ export class User {
 
     @OneToMany(() => News, (news) => news.author)
     news: News[];
+
+    @OneToMany(() => UserFunctionalAssignment, (assignment) => assignment.user)
+  functionalAssignments: UserFunctionalAssignment[];
 }

@@ -1,4 +1,5 @@
-import { Area } from 'src/areas/entities/area.entity';
+import { name } from '@azure/msal-node/dist/packageMetadata';
+import { Area } from 'src/organization/areas/entities/area.entity';
 import { UserPosition } from 'src/users/entities/user-position.entity'; 
 import {
   Column,
@@ -22,6 +23,9 @@ export class Position {
 
   @Column({ name: 'manager_id', nullable: true })
   managerId: string;
+
+  @Column({ type: 'text', nullable: true, name: 'description' })
+  description: string;
 
   // --- Relaciones ---
 

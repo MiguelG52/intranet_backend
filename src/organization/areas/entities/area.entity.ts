@@ -1,5 +1,6 @@
-import { Country } from 'src/country/entities/country.entity'; 
-import { Position } from 'src/positions/entities/position.entity'; 
+import { Country } from 'src/organization/country/entities/country.entity'; 
+import { Position } from 'src/organization/positions/entities/position.entity';
+import { AreaCoordination } from 'src/organization/coordination/entities/area-coordination.entity';
 import {
   Column,
   Entity,
@@ -29,4 +30,7 @@ export class Area {
 
   @OneToMany(() => Position, (position) => position.area)
   positions: Position[];
+
+  @OneToMany(() => AreaCoordination, (areaCoordination) => areaCoordination.area)
+  areaCoordinations: AreaCoordination[];
 }
