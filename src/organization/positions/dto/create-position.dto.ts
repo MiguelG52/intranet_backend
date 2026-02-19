@@ -9,6 +9,10 @@ export class CreatePositionDto {
   @IsNotEmpty()
   areaId: string;
 
+  @IsString({message:'La descripción del puesto debe ser una cadena de texto'})
+  @IsOptional()
+  description?: string;
+
   @IsUUID()
   @IsOptional() 
   managerId?: string;
