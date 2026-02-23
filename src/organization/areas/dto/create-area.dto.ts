@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, Length,} from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUUID} from 'class-validator';
 
 export class CreateAreaDto {
   @IsString({message:'El nombre del area debe ser una cadena de texto'})
@@ -7,6 +7,9 @@ export class CreateAreaDto {
 
   @IsString({message:'El código de pais debe ser una cadena de texto'})
   @IsOptional()
-  countryCode?: string; 
+  countryCode?: string;
 
+  @IsUUID('4', {message:'El ID de coordinación debe ser un UUID válido'})
+  @IsOptional()
+  coordinationId?: string;
 }

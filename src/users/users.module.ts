@@ -9,10 +9,21 @@ import { MailModule } from 'src/mail/mail.module';
 import { UserPosition } from './entities/user-position.entity';
 import { PositionsModule } from 'src/organization/positions/positions.module';
 import { UserFunctionalAssignment } from './entities/user-functional-assigment.entity';
+import { Area } from 'src/organization/areas/entities/area.entity';
+import { Methodology } from 'src/organization/methodology/entities/methodology.entity';
+import { Team } from 'src/organization/team/entities/team.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserAccountDetail, UserPosition, UserPosition, UserFunctionalAssignment]),
+    TypeOrmModule.forFeature([
+      User, 
+      UserAccountDetail, 
+      UserPosition, 
+      UserFunctionalAssignment,
+      Area,
+      Methodology,
+      Team
+    ]),
     CountryModule,
     PositionsModule
   ],

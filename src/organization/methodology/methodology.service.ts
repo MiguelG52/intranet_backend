@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Methodology } from './entities/methodology.entity';
+import { AreaCoordination } from 'src/organization/coordination/entities/area-coordination.entity';
 import { CreateMethodologyDto } from './dto/create-methodology.dto';
 import { UpdateMethodologyDto } from './dto/update-methodology.dto';
 
@@ -10,6 +11,8 @@ export class MethodologyService {
   constructor(
     @InjectRepository(Methodology)
     private methodologyRepository: Repository<Methodology>,
+    @InjectRepository(AreaCoordination)
+    private areaCoordinationRepository: Repository<AreaCoordination>,
   ) {}
 
   async create(createDto: CreateMethodologyDto): Promise<Methodology> {
@@ -39,6 +42,24 @@ export class MethodologyService {
   async findByCoordination(coordinationId: string): Promise<Methodology[]> {
     return this.methodologyRepository.find({
       where: { coordinationId },
+      relations: ['coordination'],
+    });
+  }
+
+  async findByArea(areaId: string): Promise<Methodology[]> {
+    // Buscar la coordinación asociada al área
+    const areaCoordination = await this.areaCoordinationRepository.findOne({
+      where: { areaId },
+      relations: ['coordination'],
+    });
+
+    if (!areaCoordination) {
+      throw new NotFoundException(`No se encontró coordinación para el área con ID ${areaId}`);
+    }
+
+    // Obtener las metodologías de esa coordinación
+    return this.methodologyRepository.find({
+      where: { coordinationId: areaCoordination.coordinationId },
       relations: ['coordination'],
     });
   }

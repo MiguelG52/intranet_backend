@@ -27,6 +27,11 @@ export class MethodologyController {
     return this.methodologyService.findByCoordination(coordinationId);
   }
 
+  @Get('area/:areaId')
+  findByArea(@Param('areaId') areaId: string) {
+    return this.methodologyService.findByArea(areaId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateDto: UpdateMethodologyDto) {
     return this.methodologyService.update(id, updateDto);

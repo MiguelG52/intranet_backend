@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -34,6 +35,21 @@ export class CreateUserDto {
   @IsOptional()
   positionId?:string;
 
+  @IsUUID()
+  @IsOptional()
+  areaId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  methodologyId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  teamId?: string;
+
+  @IsDateString(undefined, { message: 'La fecha de ingreso debe estar en formato ISO 8601: AAAA-MM-DD' })
+  @IsOptional()
+  startDate?: Date;
 
   @ValidateNested() 
   @Type(() => CreateUserDetailDto) 

@@ -19,4 +19,12 @@ export class UserProfileResponse {
       name: string;
     } | null;
   } | null;
+  methodology?: {
+    methodologyId: string;
+    name: string;
+  } | null;
+  team?: {
+    teamId: string;
+    name: string;
+  } | null;
 }

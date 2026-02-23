@@ -21,6 +21,10 @@ export class CreateUserDetailDto {
   @IsDateString(undefined, { message: 'La fecha de nacimineto debe estar en formato ISO 8601: AAAA-MM-DD' })
   @IsOptional()
   birthdate?: Date;
+
+  @IsDateString(undefined, { message: 'La fecha de ingreso debe estar en formato ISO 8601: AAAA-MM-DD' })
+  @IsOptional()
+  startDate?: Date;
 }
 
 export class UpdateUserAdminDto {
@@ -49,6 +53,14 @@ export class UpdateUserAdminDto {
   @IsUUID()
   @IsOptional()
   positionId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  methodologyId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  teamId?: string;
 
   @ValidateNested()
   @IsOptional()
