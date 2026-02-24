@@ -25,7 +25,9 @@ export class UserAccountDetail {
   @Column({ type: 'date', nullable: true })
   birthdate: Date;
 
-  
+  @Column({ name: 'start_date', type: 'date', nullable: true })
+  startDate: Date;
+
   @Column({ name: 'user_account_id' })
   userAccountId: string;
 

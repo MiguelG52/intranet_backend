@@ -15,7 +15,7 @@ export class UserFunctionalAssignment {
   methodologyId: string;
 
   @Column({ name: 'team_id', type: 'uuid', nullable: true })
-  teamId: string;
+  teamId: string | null;
 
   @Column({ name: 'is_primary', type: 'boolean', default: false })
   isPrimary: boolean;

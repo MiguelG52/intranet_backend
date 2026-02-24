@@ -16,6 +16,10 @@ import { UserProfileResponse } from 'src/authentication/responses/user-profile.r
 import { UserDetailResponse } from './responses/user-detail-response';
 import { UsersQueryParamsDto } from './dto/find-all-user.dto';
 import { UpdateUserAdminDto } from './dto/create-user-detail.dto';
+import { Area } from 'src/organization/areas/entities/area.entity';
+import { Methodology } from 'src/organization/methodology/entities/methodology.entity';
+import { Team } from 'src/organization/team/entities/team.entity';
+import { UserFunctionalAssignment } from './entities/user-functional-assigment.entity';
 
 @Injectable()
 export class UsersService {
@@ -25,6 +29,14 @@ export class UsersService {
     private readonly userRepository:Repository<User>,
     @InjectRepository(UserPosition)
     private readonly userPositionRepository:Repository<UserPosition>,
+    @InjectRepository(Area)
+    private readonly areaRepository:Repository<Area>,
+    @InjectRepository(Methodology)
+    private readonly methodologyRepository:Repository<Methodology>,
+    @InjectRepository(Team)
+    private readonly teamRepository:Repository<Team>,
+    @InjectRepository(UserFunctionalAssignment)
+    private readonly userFunctionalAssignmentRepository:Repository<UserFunctionalAssignment>,
     private readonly dataSource: DataSource,
     private readonly positionService: PositionService
   ) {}
@@ -76,7 +88,11 @@ export class UsersService {
       roleId,
       countryCode,
       detail,
-      positionId
+      positionId,
+      areaId,
+      methodologyId,
+      teamId,
+      startDate
     } = createUserDto;
 
     const existingUser = await this.userRepository.findOneBy({ email });
@@ -84,6 +100,7 @@ export class UsersService {
       throw new ConflictException(`El email '${email}' ya está registrado.`);
     }
 
+    // Validar que el puesto exista
     if(positionId){
       try {
         await this.positionService.findOne(positionId);
@@ -92,9 +109,40 @@ export class UsersService {
       }
     }
 
+    // Validar que el área exista
+    if(areaId){
+      const areaExists = await this.areaRepository.findOne({ where: { areaId } });
+      if(!areaExists){
+        throw new BadRequestException(`El área con ID '${areaId}' no existe.`);
+      }
+    }
+
+    // Validar que la metodología exista
+    if(methodologyId){
+      const methodologyExists = await this.methodologyRepository.findOne({ where: { methodologyId } });
+      if(!methodologyExists){
+        throw new BadRequestException(`La metodología con ID '${methodologyId}' no existe.`);
+      }
+    }
+
+    // Validar que el equipo exista y pertenezca a la metodología especificada
+    if(teamId){
+      const team = await this.teamRepository.findOne({ 
+        where: { teamId },
+        relations: ['methodology']
+      });
+      if(!team){
+        throw new BadRequestException(`El equipo con ID '${teamId}' no existe.`);
+      }
+      // Si se proporciona metodología, verificar que el equipo pertenezca a esa metodología
+      if(methodologyId && team.methodologyId !== methodologyId){
+        throw new BadRequestException(`El equipo con ID '${teamId}' no pertenece a la metodología seleccionada.`);
+      }
+    }
+
     const saltRounds = 10;
-  const plainPassword = this.generateTemporaryPassword();
-  const hashedPassword = await hash(plainPassword, saltRounds);
+    const plainPassword = this.generateTemporaryPassword();
+    const hashedPassword = await hash(plainPassword, saltRounds);
     const verificationToken = this.generateVerificationToken();
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -115,20 +163,35 @@ export class UsersService {
         isVerified: false,
       });
 
-      if (detail) {
-        const userDetail = queryRunner.manager.create(UserAccountDetail, detail);
+      if (detail || startDate) {
+        const userDetailData = {
+          ...detail,
+          ...(startDate && { startDate })
+        };
+        const userDetail = queryRunner.manager.create(UserAccountDetail, userDetailData);
         user.userDetail = userDetail;
       }
       
       savedUser = await queryRunner.manager.save(user);
       
-      //Asignamos al usuario creado a un puesto 
+      // Asignamos al usuario creado a un puesto
       if(positionId){
         const newUserPosition = this.userPositionRepository.create({
           userId: savedUser.userId,
           positionId: positionId,
         });
         await queryRunner.manager.save(newUserPosition);
+      }
+
+      // Creamos la asignación funcional con metodología y equipo
+      if(methodologyId){
+        const functionalAssignment = queryRunner.manager.create(UserFunctionalAssignment, {
+          userId: savedUser.userId,
+          methodologyId: methodologyId,
+          ...(teamId && { teamId }),
+          isPrimary: true
+        });
+        await queryRunner.manager.save(functionalAssignment);
       }
       
       await queryRunner.commitTransaction();
@@ -161,6 +224,9 @@ export class UsersService {
     queryBuilder.leftJoinAndSelect('user.userPositions', 'userPositions');
     queryBuilder.leftJoinAndSelect('userPositions.position', 'position');
     queryBuilder.leftJoinAndSelect('position.area', 'area');
+    queryBuilder.leftJoinAndSelect('user.functionalAssignments', 'functionalAssignments', 'functionalAssignments.isPrimary = :isPrimary', { isPrimary: true });
+    queryBuilder.leftJoinAndSelect('functionalAssignments.methodology', 'methodology');
+    queryBuilder.leftJoinAndSelect('functionalAssignments.team', 'team');
 
     // Filtrar por posicion
     if (positionId) {
@@ -189,6 +255,7 @@ export class UsersService {
 
     const cleanData: UserProfileResponse[] = data.map((user) => {
       const primaryPosition = user.userPositions?.[0]?.position;
+      const primaryAssignment = user.functionalAssignments?.[0];
       
       return {
         userId: user.userId,
@@ -206,6 +273,14 @@ export class UsersService {
             id: primaryPosition.area.areaId,
             name: primaryPosition.area.areaName
           } : null
+        } : null,
+        methodology: primaryAssignment?.methodology ? {
+          methodologyId: primaryAssignment.methodology.methodologyId,
+          name: primaryAssignment.methodology.name
+        } : null,
+        team: primaryAssignment?.team ? {
+          teamId: primaryAssignment.team.teamId,
+          name: primaryAssignment.team.name
         } : null
       };
     });
@@ -254,6 +329,10 @@ export class UsersService {
             position: {
                 area: true
             }
+        },
+        functionalAssignments: {
+            methodology: true,
+            team: true
         }
       }
     });
@@ -299,12 +378,24 @@ export class UsersService {
     return { message: 'Usuario eliminado correctamente' };
   }
 
+  async toggleStatus(id: string) {
+    const user = await this.userRepository.findOne({ where: { userId: id } });
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
+    }
+    user.isActive = !user.isActive;
+    await this.userRepository.save(user);
+    return { message: `Usuario ${user.isActive ? 'activado' : 'desactivado'} correctamente`, isActive: user.isActive };
+  }
+
 
   async updateUserAdmin(userId: string, updateDto: UpdateUserAdminDto) {
     const { 
       roleId, 
       countryCode, 
-      positionId, 
+      positionId,
+      methodologyId,
+      teamId, 
       detail, 
       ...basicData 
     } = updateDto;
@@ -341,6 +432,7 @@ export class UsersService {
 
       await queryRunner.manager.save(user);
 
+      // Actualizamos el Puesto
       if (positionId) {
         const positionExists = await this.positionService.findOne(positionId);
         if (!positionExists) throw new BadRequestException('El puesto indicado no existe');
@@ -359,6 +451,60 @@ export class UsersService {
                 positionId
             });
             await queryRunner.manager.save(newPosition);
+        }
+      }
+
+      // Actualizamos Metodología y Equipo (Asignación Funcional)
+      if (methodologyId !== undefined) {
+        // Validar que la metodología exista
+        if (methodologyId) {
+          const methodologyExists = await queryRunner.manager.findOne(Methodology, { 
+            where: { methodologyId } 
+          });
+          if (!methodologyExists) {
+            throw new BadRequestException(`La metodología con ID '${methodologyId}' no existe.`);
+          }
+
+          // Si se proporciona equipo, validar que exista y pertenezca a la metodología
+          if (teamId) {
+            const team = await queryRunner.manager.findOne(Team, { 
+              where: { teamId },
+              relations: ['methodology']
+            });
+            if (!team) {
+              throw new BadRequestException(`El equipo con ID '${teamId}' no existe.`);
+            }
+            if (team.methodologyId !== methodologyId) {
+              throw new BadRequestException(`El equipo con ID '${teamId}' no pertenece a la metodología seleccionada.`);
+            }
+          }
+
+          // Buscar asignación funcional existente
+          const currentAssignment = await queryRunner.manager.findOne(UserFunctionalAssignment, {
+            where: { userId, isPrimary: true }
+          });
+
+          if (currentAssignment) {
+            // Actualizar asignación existente
+            currentAssignment.methodologyId = methodologyId;
+            currentAssignment.teamId = teamId || null;
+            await queryRunner.manager.save(currentAssignment);
+          } else {
+            // Crear nueva asignación
+            const newAssignment = queryRunner.manager.create(UserFunctionalAssignment, {
+              userId,
+              methodologyId,
+              teamId: teamId || null,
+              isPrimary: true
+            });
+            await queryRunner.manager.save(newAssignment);
+          }
+        } else {
+          // Si methodologyId es null/vacío, eliminar asignación funcional
+          await queryRunner.manager.delete(UserFunctionalAssignment, { 
+            userId, 
+            isPrimary: true 
+          });
         }
       }
 

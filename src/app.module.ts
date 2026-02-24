@@ -10,7 +10,6 @@ import { RoleModule } from './role/role.module';
 import configuration from './config/configuration';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { MailModule } from './mail/mail.module';
 import { PositionsModule } from './organization/positions/positions.module';
 import { AreasModule } from './organization/areas/areas.module';
@@ -46,24 +45,7 @@ import { VacationsModule } from './vacations/vacations.module';
       },
       inject: [ConfigService],
     }),
-    MailerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        transport: {
-          host: 'smtp.office365.com', 
-          port: 587,
-          secure: false,
-          auth: {
-            user: configService.get<string>('MAIL_USER'),
-            pass: configService.get<string>('MAIL_PASSWORD'),
-          },
-        },
-        defaults: {
-          from: `"INTRANET ASHA"<${configService.get<string>('MAIL_USER')}>`,
-        },
-      }),
-    }),
+
     ScheduleModule.forRoot(),
     CacheModule.register(),
     AuthenticationModule, 
