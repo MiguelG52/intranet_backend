@@ -57,6 +57,12 @@ export class UsersController {
     return this.usersService.updateUserAdmin(id, updateUserDto);
   }
 
+  @Roles(Role.Admin)
+  @Patch('toggle-status/:id')
+  toggleStatus(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.toggleStatus(id);
+  }
+
   @Delete(':id')
   @Roles(Role.Admin)
   remove(@Param('id', ParseUUIDPipe) id: string) {

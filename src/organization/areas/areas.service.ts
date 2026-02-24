@@ -25,11 +25,16 @@ export class AreaService {
     await queryRunner.startTransaction();
 
     try {
-      const { areaName, coordinationId } = createAreaDto;
+      const { areaName } = createAreaDto;
       
-      // Normalizar el countryCode
-      const countryCode = createAreaDto.countryCode
+      // Normalizar el countryCode (area global si no hay país)
+      const countryCode = createAreaDto.countryCode && createAreaDto.countryCode.trim() !== ''
         ? createAreaDto.countryCode.toUpperCase()
+        : undefined;
+
+      // Normalizar coordinationId (no requerido)
+      const coordinationId = createAreaDto.coordinationId && createAreaDto.coordinationId.trim() !== ''
+        ? createAreaDto.coordinationId
         : undefined;
 
       if (countryCode) {
@@ -123,10 +128,17 @@ export class AreaService {
     await queryRunner.startTransaction();
 
     try {
-      const { coordinationId, ...areaData } = updateAreaDto;
-      
-      // Si el countryCode es un string vacío, lo tratamos como undefined (Global)
-      const countryCode = areaData.countryCode === '' ? undefined : areaData.countryCode;
+      const { coordinationId: rawCoordinationId, ...areaData } = updateAreaDto;
+
+      // Normalizar countryCode (área global si viene vacío o no viene)
+      const countryCode = areaData.countryCode && areaData.countryCode.trim() !== ''
+        ? areaData.countryCode.toUpperCase()
+        : undefined;
+
+      // Normalizar coordinationId (no requerido)
+      const coordinationId = rawCoordinationId && rawCoordinationId.trim() !== ''
+        ? rawCoordinationId
+        : undefined;
 
       if (countryCode) {
         await this.countryService.findOne(countryCode);
@@ -142,14 +154,11 @@ export class AreaService {
         throw new NotFoundException(`Área con ID '${id}' no encontrada.`);
       }
       
-      // Guardar área actualizada
       await queryRunner.manager.save(area);
 
-      // Manejar la relación con coordinación
-      // Primero eliminar la relación existente
       await queryRunner.manager.delete(AreaCoordination, { areaId: id });
 
-      // Si se proporciona una nueva coordinación, crear la relación
+      // Solo crear nueva relación si se proporcionó coordinationId
       if (coordinationId) {
         const areaCoordination = queryRunner.manager.create(AreaCoordination, {
           areaId: id,

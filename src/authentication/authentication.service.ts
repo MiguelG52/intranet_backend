@@ -182,7 +182,7 @@ export class AuthenticationService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
     
-    const primaryAssignment = user.userFunctionalAssignments?.find(fa => fa.isPrimary);
+    const primaryAssignment = user.functionalAssignments?.find(fa => fa.isPrimary);
     
     const userData: UserProfileResponse = {
       userId: user.userId,

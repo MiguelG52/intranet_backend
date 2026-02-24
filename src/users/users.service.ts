@@ -224,7 +224,7 @@ export class UsersService {
     queryBuilder.leftJoinAndSelect('user.userPositions', 'userPositions');
     queryBuilder.leftJoinAndSelect('userPositions.position', 'position');
     queryBuilder.leftJoinAndSelect('position.area', 'area');
-    queryBuilder.leftJoinAndSelect('user.userFunctionalAssignments', 'functionalAssignments', 'functionalAssignments.isPrimary = :isPrimary', { isPrimary: true });
+    queryBuilder.leftJoinAndSelect('user.functionalAssignments', 'functionalAssignments', 'functionalAssignments.isPrimary = :isPrimary', { isPrimary: true });
     queryBuilder.leftJoinAndSelect('functionalAssignments.methodology', 'methodology');
     queryBuilder.leftJoinAndSelect('functionalAssignments.team', 'team');
 
@@ -255,7 +255,7 @@ export class UsersService {
 
     const cleanData: UserProfileResponse[] = data.map((user) => {
       const primaryPosition = user.userPositions?.[0]?.position;
-      const primaryAssignment = user.userFunctionalAssignments?.[0];
+      const primaryAssignment = user.functionalAssignments?.[0];
       
       return {
         userId: user.userId,
@@ -330,7 +330,7 @@ export class UsersService {
                 area: true
             }
         },
-        userFunctionalAssignments: {
+        functionalAssignments: {
             methodology: true,
             team: true
         }
@@ -376,6 +376,16 @@ export class UsersService {
       throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
     }
     return { message: 'Usuario eliminado correctamente' };
+  }
+
+  async toggleStatus(id: string) {
+    const user = await this.userRepository.findOne({ where: { userId: id } });
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID '${id}' no encontrado.`);
+    }
+    user.isActive = !user.isActive;
+    await this.userRepository.save(user);
+    return { message: `Usuario ${user.isActive ? 'activado' : 'desactivado'} correctamente`, isActive: user.isActive };
   }
 
 
