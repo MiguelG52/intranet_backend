@@ -12,6 +12,7 @@ import { UserFunctionalAssignment } from './entities/user-functional-assigment.e
 import { Area } from 'src/organization/areas/entities/area.entity';
 import { Methodology } from 'src/organization/methodology/entities/methodology.entity';
 import { Team } from 'src/organization/team/entities/team.entity';
+import { VacationsModule } from 'src/vacations/vacations.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { Team } from 'src/organization/team/entities/team.entity';
       Team
     ]),
     CountryModule,
-    PositionsModule
+    PositionsModule,
+    VacationsModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

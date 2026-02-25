@@ -20,6 +20,7 @@ import { Area } from 'src/organization/areas/entities/area.entity';
 import { Methodology } from 'src/organization/methodology/entities/methodology.entity';
 import { Team } from 'src/organization/team/entities/team.entity';
 import { UserFunctionalAssignment } from './entities/user-functional-assigment.entity';
+import { VacationsService } from 'src/vacations/vacations.service';
 
 @Injectable()
 export class UsersService {
@@ -38,7 +39,8 @@ export class UsersService {
     @InjectRepository(UserFunctionalAssignment)
     private readonly userFunctionalAssignmentRepository:Repository<UserFunctionalAssignment>,
     private readonly dataSource: DataSource,
-    private readonly positionService: PositionService
+    private readonly positionService: PositionService,
+    private readonly vacationsService: VacationsService,
   ) {}
 
   private generateVerificationToken(): string {
@@ -160,7 +162,7 @@ export class UsersService {
         role: { roleId } as unknown as Role,
         country: { code: countryCode } as unknown as Country,
         token2fa: verificationToken, 
-        isVerified: false,
+        isVerified: true,
       });
 
       if (detail || startDate) {
@@ -203,6 +205,23 @@ export class UsersService {
       
     } finally {
       await queryRunner.release();
+    }
+
+    // Intentar asignar días de vacaciones si la fecha de ingreso es >= 1 año
+    if (startDate) {
+      const diffMs = Date.now() - new Date(startDate).getTime();
+      const yearsElapsed = diffMs / (1000 * 60 * 60 * 24 * 365.25);
+      if (yearsElapsed >= 1) {
+        try {
+          await this.vacationsService.assignVacationDays(savedUser.userId);
+        } catch (error) {
+          if (error instanceof NotFoundException) {
+            throw new BadRequestException(
+              `Usuario creado, pero no existe una política de vacaciones para el país '${createUserDto.countryCode}'. Define una política antes de registrar usuarios con antigüedad >= 1 año.`
+            );
+          }
+        }
+      }
     }
 
     return {
