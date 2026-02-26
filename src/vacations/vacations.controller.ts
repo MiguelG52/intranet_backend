@@ -66,6 +66,13 @@ export class VacationsController {
     return this.vacationsService.assignVacationDays(userId);
   }
 
+  @Post('balance/backfill')
+  @UseGuards(RoleGuard)
+  @Roles(Role.Admin)
+  backfillAllBalances() {
+    return this.vacationsService.backfillAllBalances();
+  }
+
   @Get('balance/my-balance')
   getMyBalance(@Request() req) {
     const userId = req.user.sub;
@@ -130,5 +137,20 @@ export class VacationsController {
   ) {
     const userId = req.user.sub;
     return this.vacationsService.cancelRequest(id, userId);
+  }
+
+  // ==================== DÍAS FERIADOS ====================
+
+  @Get('holidays/upcoming')
+  getMyUpcomingHolidays(@Request() req) {
+    const userId = req.user.sub;
+    return this.vacationsService.getUpcomingHolidaysForUser(userId);
+  }
+
+  @Get('holidays/upcoming/:countryCode')
+  @UseGuards(RoleGuard)
+  @Roles(Role.Admin)
+  getUpcomingHolidaysByCountry(@Param('countryCode') countryCode: string) {
+    return this.vacationsService.getUpcomingHolidays(countryCode);
   }
 }

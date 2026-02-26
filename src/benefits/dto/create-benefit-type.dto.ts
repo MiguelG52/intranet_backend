@@ -6,4 +6,7 @@ export class CreateBenefitTypeDto {
     @IsString()
     @IsOptional()
     description?: string;
+    @IsString()
+    @IsOptional()
+    icon?: string;
 }

@@ -1,16 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { VacationPolicy } from './entities/vacation-policy.entity';
 import { VacationBalance } from './entities/vacation-balance.entity';
 import { VacationRequest } from './entities/vacation-request.entity';
+import { PublicHoliday } from './entities/public-holiday.entity';
 import { CreateVacationPolicyDto, UpdateVacationPolicyDto } from './dto/vacation-policy.dto';
 import { CreateVacationRequestDto, QueryVacationRequestDto, ReviewVacationRequestDto } from './dto/vacation-request.dto';
 import { VacationStatus } from './enums/vacation-status.enum';
+import { MailService } from 'src/mail/mail.service';
+import { getFrontendUrl } from 'src/libs/getFrontendUrl';
 
 @Injectable()
 export class VacationsService {
+  private readonly logger = new Logger(VacationsService.name);
+
   constructor(
     @InjectRepository(VacationPolicy)
     private readonly policyRepository: Repository<VacationPolicy>,
@@ -18,8 +23,63 @@ export class VacationsService {
     private readonly balanceRepository: Repository<VacationBalance>,
     @InjectRepository(VacationRequest)
     private readonly requestRepository: Repository<VacationRequest>,
+    @InjectRepository(PublicHoliday)
+    private readonly holidayRepository: Repository<PublicHoliday>,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
+
+
+  private formatDate(date: Date | string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  private async notifyHRNewVacationRequest(userId: string, request: VacationRequest): Promise<void> {
+    const hrEmail = process.env.HR_EMAIL;
+    if (!hrEmail) {
+      this.logger.warn('HR_EMAIL no está configurado. No se enviará notificación a Capital Humano.');
+      return;
+    }
+
+    const userRepository = this.dataSource.getRepository('User');
+    const user = await userRepository.findOne({
+      where: { userId },
+      relations: ['userDetail'],
+    });
+    if (!user) return;
+
+    const requestUrl = `${getFrontendUrl()}/admin/vacations/requests/${request.requestId}`;
+
+    await this.mailService.sendVacationRequestEmail({
+      recipientEmail: hrEmail,
+      recipientName: 'Capital Humano',
+      employeeName: `${user.name} ${user.lastname ?? ''}`.trim(),
+      startDate: this.formatDate(request.startDate),
+      endDate: this.formatDate(request.endDate),
+      totalDays: Number(request.requestedDays),
+      requestDate: this.formatDate(new Date()),
+      requestUrl,
+      notes: request.notes ?? undefined,
+    });
+  }
+
+  private async notifyUserVacationApproved(request: VacationRequest): Promise<void> {
+    const userRepository = this.dataSource.getRepository('User');
+    const user = await userRepository.findOne({ where: { userId: request.userId } });
+    if (!user?.email) return;
+
+    const requestUrl = `${getFrontendUrl()}/vacaciones/mis-solicitudes`;
+
+    await this.mailService.sendVacationApprovedEmail({
+      userEmail: user.email,
+      userName: user.name,
+      startDate: this.formatDate(request.startDate),
+      endDate: this.formatDate(request.endDate),
+      totalDays: Number(request.requestedDays),
+      requestUrl,
+    });
+  }
 
 
 
@@ -75,11 +135,15 @@ export class VacationsService {
  
 
 
-  private calculateYearsOfService(startDate: Date): number {
+  private calculateYearsOfService(startDate: Date | string): number {
+    const start = new Date(startDate);
     const now = new Date();
-    const diffTime = now.getTime() - startDate.getTime();
-    const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
-    return Math.floor(diffYears);
+    let years = now.getFullYear() - start.getFullYear();
+    const monthDiff = now.getMonth() - start.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < start.getDate())) {
+      years--;
+    }
+    return years;
   }
 
 
@@ -115,13 +179,28 @@ export class VacationsService {
       );
     }
 
-    const periodStart = new Date(user.userDetail.startDate);
-    periodStart.setFullYear(periodStart.getFullYear() + yearsOfService);
-    
-    const periodEnd = new Date(periodStart);
-    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    periodEnd.setDate(periodEnd.getDate() - 1);
+    const startRaw = new Date(user.userDetail.startDate);
+    const periodStart = new Date(
+      startRaw.getUTCFullYear() + yearsOfService,
+      startRaw.getUTCMonth(),
+      startRaw.getUTCDate(),
+    );
+    const periodEnd = new Date(
+      startRaw.getUTCFullYear() + yearsOfService + 1,
+      startRaw.getUTCMonth(),
+      startRaw.getUTCDate() - 1,
+    );
 
+    // Evitar duplicados: comparar por fecha formateada para evitar problemas de zona horaria
+    const periodStartStr = periodStart.toISOString().split('T')[0];
+    const existingBalance = await this.balanceRepository
+      .createQueryBuilder('b')
+      .where('b.user_id = :userId', { userId })
+      .andWhere('CAST(b.period_start AS TEXT) = :periodStart', { periodStart: periodStartStr })
+      .getOne();
+    if (existingBalance) {
+      return existingBalance;
+    }
 
     const balance = this.balanceRepository.create({
       userId,
@@ -136,10 +215,24 @@ export class VacationsService {
   }
 
   async getUserBalance(userId: string) {
-    const balances = await this.balanceRepository.find({
+    let balances = await this.balanceRepository.find({
       where: { userId, isActive: true },
       order: { periodStart: 'ASC' },
     });
+
+    // Si no hay balance registrado, intentar asignar automáticamente
+    // (cubre el caso donde las políticas se crearon después del aniversario del usuario)
+    if (balances.length === 0) {
+      try {
+        await this.assignVacationDays(userId);
+        balances = await this.balanceRepository.find({
+          where: { userId, isActive: true },
+          order: { periodStart: 'ASC' },
+        });
+      } catch {
+        // El usuario no califica aún (< 1 año) o no hay política definida; se devuelve 0
+      }
+    }
 
     const totalGranted = balances.reduce((sum, b) => sum + b.daysGranted, 0);
     const totalUsed = balances.reduce((sum, b) => sum + Number(b.daysUsed), 0);
@@ -155,10 +248,44 @@ export class VacationsService {
     };
   }
 
+  async backfillAllBalances(): Promise<{ assigned: number; skipped: number; errors: number }> {
+    const userRepository = this.dataSource.getRepository('User');
+    const users = await userRepository
+      .createQueryBuilder('user')
+      .innerJoinAndSelect('user.userDetail', 'detail')
+      .innerJoinAndSelect('user.country', 'country')
+      .where('user.isActive = true')
+      .andWhere('detail.start_date IS NOT NULL')
+      .getMany();
+
+    let assigned = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for (const user of users) {
+      try {
+        const yearsOfService = this.calculateYearsOfService(user.userDetail.startDate);
+        if (yearsOfService < 1) { skipped++; continue; }
+
+        // Verificar si ya tiene balance activo
+        const existing = await this.balanceRepository.findOne({
+          where: { userId: user.userId, isActive: true },
+        });
+        if (existing) { skipped++; continue; }
+
+        await this.assignVacationDays(user.userId);
+        assigned++;
+      } catch {
+        errors++;
+      }
+    }
+
+    return { assigned, skipped, errors };
+  }
+
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async autoAssignVacationDays() {
-    console.log('🔄 Ejecutando asignación automática de vacaciones...');
 
     const today = new Date();
     const month = today.getMonth() + 1;
@@ -194,11 +321,9 @@ export class VacationsService {
           }
         }
       } catch (error) {
-        console.error(`❌ Error asignando a ${user.userId}:`, error.message);
+        
       }
     }
-
-    console.log('✅ Asignación automática completada.');
   }
 
 
@@ -219,8 +344,9 @@ export class VacationsService {
 
 
   async createRequest(userId: string, dto: CreateVacationRequestDto): Promise<VacationRequest> {
-    const startDate = new Date(dto.startDate);
-    const endDate = new Date(dto.endDate);
+    // Parse as local noon to avoid UTC-midnight timezone shift on getDay() calls
+    const startDate = new Date(`${dto.startDate}T12:00:00`);
+    const endDate = new Date(`${dto.endDate}T12:00:00`);
 
     if (endDate < startDate) {
       throw new BadRequestException('La fecha de fin debe ser posterior a la fecha de inicio.');
@@ -248,12 +374,19 @@ export class VacationsService {
       notes: dto.notes,
     });
 
-    return this.requestRepository.save(request);
+    const savedRequest = await this.requestRepository.save(request);
+
+    // Notificar a Capital Humano de forma asíncrona (no bloquea la respuesta)
+    this.notifyHRNewVacationRequest(userId, savedRequest).catch((err) =>
+      this.logger.error('Error notificando a RH sobre nueva solicitud de vacaciones', err),
+    );
+
+    return savedRequest;
   }
 
 
   async findAllRequests(query: QueryVacationRequestDto) {
-    const { status, userId, page = 1, limit = 10 } = query;
+    const { status, userId, search, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.requestRepository
@@ -271,6 +404,13 @@ export class VacationsService {
 
     if (userId) {
       queryBuilder.andWhere('request.userId = :userId', { userId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        "CONCAT(user.name, ' ', COALESCE(user.lastname, '')) ILIKE :search",
+        { search: `%${search}%` },
+      );
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();
@@ -358,6 +498,14 @@ export class VacationsService {
       }
 
       await queryRunner.commitTransaction();
+
+      // Notificar al usuario si sus vacaciones fueron aprobadas
+      if (request.status === VacationStatus.APPROVED) {
+        this.notifyUserVacationApproved(request).catch((err) =>
+          this.logger.error('Error notificando al usuario sobre aprobación de vacaciones', err),
+        );
+      }
+
       return request;
 
     } catch (error) {
@@ -368,6 +516,37 @@ export class VacationsService {
     }
   }
 
+
+  async getUpcomingHolidays(countryCode: string): Promise<PublicHoliday[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const in7Days = new Date(today);
+    in7Days.setDate(in7Days.getDate() + 7);
+
+    return this.holidayRepository
+      .createQueryBuilder('holiday')
+      .where('holiday.country_code = :countryCode', { countryCode })
+      .andWhere('holiday.is_active = true')
+      .andWhere('holiday.holiday_date >= :today', { today })
+      .andWhere('holiday.holiday_date <= :in7Days', { in7Days })
+      .orderBy('holiday.holiday_date', 'ASC')
+      .getMany();
+  }
+
+  async getUpcomingHolidaysForUser(userId: string): Promise<PublicHoliday[]> {
+    const userRepository = this.dataSource.getRepository('User');
+    const user = await userRepository.findOne({
+      where: { userId },
+      relations: ['country'],
+    });
+
+    if (!user || !user.country) {
+      throw new BadRequestException('El usuario no tiene un país asignado.');
+    }
+
+    return this.getUpcomingHolidays(user.country.code);
+  }
 
   async cancelRequest(requestId: string, userId: string): Promise<VacationRequest> {
     const request = await this.requestRepository.findOne({

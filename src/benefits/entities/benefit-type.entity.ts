@@ -10,4 +10,7 @@ export class BenefitType{
 
     @Column({type:"varchar", nullable:true})
     description:string
+
+    @Column({type:"varchar", nullable:true, name:"icon"})
+    icon:string
 }

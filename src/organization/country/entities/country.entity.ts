@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryColumn } from "typeorm";
+import { PublicHoliday } from "src/vacations/entities/public-holiday.entity";
 
 @Entity({name:"country"})
 export class Country {
@@ -12,5 +13,6 @@ export class Country {
     @Column({ name: 'phone_country_code', type: 'varchar', length: 5, nullable: true })
     phoneCountryCode: string;
 
-    
+    @OneToMany(() => PublicHoliday, (holiday) => holiday.country)
+    holidays: PublicHoliday[];
 }

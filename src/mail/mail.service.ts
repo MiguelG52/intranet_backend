@@ -1,10 +1,13 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { join } from 'path';
+import * as pug from 'pug';
 import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
   private readonly msalClient: ConfidentialClientApplication;
   private readonly tenantId: string;
   private readonly clientId: string;
@@ -37,15 +40,25 @@ export class MailService {
   }
 
   private async getAccessToken(): Promise<string> {
-    const result = await this.msalClient.acquireTokenByClientCredential({
-      scopes: ['https://graph.microsoft.com/.default'],
-    });
+    try {
+      const result = await this.msalClient.acquireTokenByClientCredential({
+        scopes: ['https://graph.microsoft.com/.default'],
+      });
 
-    if (!result?.accessToken) {
-      throw new InternalServerErrorException('No se pudo obtener el token de Microsoft Graph');
+      if (!result?.accessToken) {
+        throw new Error('El resultado de MSAL no contiene un accessToken');
+      }
+
+      return result.accessToken;
+    } catch (error) {
+      this.logger.error('Error obteniendo token de Microsoft Graph', error);
+      throw new InternalServerErrorException('No se pudo autenticar con Microsoft Graph');
     }
+  }
 
-    return result.accessToken;
+  private renderTemplate(templateName: string, locals: Record<string, unknown>): string {
+    const templatePath = join(__dirname, 'templates', `${templateName}.pug`);
+    return pug.renderFile(templatePath, locals);
   }
 
   private async sendMail(to: string, subject: string, html: string): Promise<void> {
@@ -56,61 +69,121 @@ export class MailService {
     const accessToken = await this.getAccessToken();
     const userPath = encodeURIComponent(this.smtpUser);
 
-    const response = await fetch(
-      `https://graph.microsoft.com/v1.0/users/${userPath}/sendMail`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: {
-            subject,
-            body: { contentType: 'HTML', content: html },
-            toRecipients: [{ emailAddress: { address: to } }],
+    try {
+      const response = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${userPath}/sendMail`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
           },
-          saveToSentItems: false,
-        }),
-      },
-    );
+          body: JSON.stringify({
+            message: {
+              subject,
+              body: { contentType: 'HTML', content: html },
+              toRecipients: [{ emailAddress: { address: to } }],
+            },
+            saveToSentItems: false,
+          }),
+        },
+      );
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new InternalServerErrorException(`Error al enviar correo: ${error}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        this.logger.error(`Error detallado de Microsoft Graph: ${JSON.stringify(errorData, null, 2)}`);
+        throw new InternalServerErrorException(`Graph API Error: ${errorData.error?.message || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      this.logger.error('Error ejecutando fetch hacia Graph API', error);
+      throw new InternalServerErrorException(`Error al enviar el correo: ${error.message}`);
     }
   }
 
   async sendPasswordResetEmail(user: User, token: string) {
     const resetUrl = `${this.frontendUrl}/reset-password?token=${token}`;
+    const html = this.renderTemplate('reset-password', {
+      name: user.name,
+      resetUrl,
+    });
 
     await this.sendMail(
       user.email,
-      'Restablece tu contraseña - Intranet Asha',
-      `
-        <p>Hola ${user.name},</p>
-        <p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente enlace:</p>
-        <a href="${resetUrl}" target="_blank">Restablecer mi contraseña</a>
-        <p>Si no solicitaste esto, puedes ignorar este correo.</p>
-        <p>El enlace expira en 30 minutos.</p>
-      `,
+      'Restablece tu contraseña - ASHA Solution',
+      html,
     );
   }
 
-  async sendAccountVerificationEmail(user: User, token: string, temporaryPassword: string) {
-    const verificationUrl = `${this.frontendUrl}/verify-account?token=${token}`;
+  async sendWelcomeEmail(user: User, temporaryPassword: string) {
+    const accessUrl = `${this.frontendUrl}/login`;
+    const html = this.renderTemplate('welcome', {
+      name: user.name,
+      email: user.email,
+      temporaryPassword,
+      accessUrl,
+    });
 
     await this.sendMail(
       user.email,
-      '¡Verifica tu cuenta en ASHA solution!',
-      `
-        <p>¡Hola ${user.name}!</p>
-        <p>Te damos la bienvenida a ASHA solution. Por favor, haz clic en el siguiente enlace para verificar tu cuenta:</p>
-        <a href="${verificationUrl}" target="_blank">Verificar mi cuenta</a>
-        <p>Tu contraseña temporal es: <strong>${temporaryPassword}</strong></p>
-        <p>Después de iniciar sesión, te recomendamos cambiarla desde tu perfil.</p>
-        <p>Si no te registraste, por favor ignora este correo.</p>
-      `,
+      '¡Bienvenido/a a ASHA Solution!',
+      html,
+    );
+  }
+
+  /** @deprecated Use sendWelcomeEmail instead */
+  async sendAccountVerificationEmail(user: User, token: string, temporaryPassword: string) {
+    await this.sendWelcomeEmail(user, temporaryPassword);
+  }
+
+  async sendVacationRequestEmail(options: {
+    recipientEmail: string;
+    recipientName: string;
+    employeeName: string;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    requestDate: string;
+    requestUrl: string;
+    notes?: string;
+  }) {
+    const html = this.renderTemplate('vacation-request', {
+      recipientName: options.recipientName,
+      employeeName: options.employeeName,
+      startDate: options.startDate,
+      endDate: options.endDate,
+      totalDays: options.totalDays,
+      requestDate: options.requestDate,
+      requestUrl: options.requestUrl,
+      notes: options.notes,
+    });
+
+    await this.sendMail(
+      options.recipientEmail,
+      `Nueva solicitud de vacaciones — ${options.employeeName}`,
+      html,
+    );
+  }
+
+  async sendVacationApprovedEmail(options: {
+    userEmail: string;
+    userName: string;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    requestUrl: string;
+  }) {
+    const html = this.renderTemplate('vacation-approved', {
+      name: options.userName,
+      startDate: options.startDate,
+      endDate: options.endDate,
+      totalDays: options.totalDays,
+      requestUrl: options.requestUrl,
+    });
+
+    await this.sendMail(
+      options.userEmail,
+      '¡Tus vacaciones fueron aprobadas! 🏖️ — ASHA Solution',
+      html,
     );
   }
 }

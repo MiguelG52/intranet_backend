@@ -77,6 +77,9 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
+      pug:
+        specifier: ^3.0.3
+        version: 3.0.3
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -7135,8 +7138,7 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  acorn@7.4.1:
-    optional: true
+  acorn@7.4.1: {}
 
   acorn@8.15.0: {}
 
@@ -7222,8 +7224,7 @@ snapshots:
 
   asap@2.0.6: {}
 
-  assert-never@1.4.0:
-    optional: true
+  assert-never@1.4.0: {}
 
   async@3.2.6:
     optional: true
@@ -7294,7 +7295,6 @@ snapshots:
   babel-walk@3.0.0-canary-5:
     dependencies:
       '@babel/types': 7.28.4
-    optional: true
 
   balanced-match@1.0.2: {}
 
@@ -7460,7 +7460,6 @@ snapshots:
   character-parser@2.2.0:
     dependencies:
       is-regex: 1.2.1
-    optional: true
 
   chardet@2.1.0: {}
 
@@ -7597,7 +7596,6 @@ snapshots:
     dependencies:
       '@babel/parser': 7.28.4
       '@babel/types': 7.28.4
-    optional: true
 
   content-disposition@0.5.4:
     dependencies:
@@ -7742,8 +7740,7 @@ snapshots:
       run-applescript: 3.2.0
     optional: true
 
-  doctypes@1.1.0:
-    optional: true
+  doctypes@1.1.0: {}
 
   dom-serializer@1.4.1:
     dependencies:
@@ -8511,7 +8508,6 @@ snapshots:
     dependencies:
       acorn: 7.4.1
       object-assign: 4.1.1
-    optional: true
 
   is-extglob@2.1.1: {}
 
@@ -8529,8 +8525,7 @@ snapshots:
 
   is-plain-obj@1.1.0: {}
 
-  is-promise@2.2.2:
-    optional: true
+  is-promise@2.2.2: {}
 
   is-promise@4.0.0: {}
 
@@ -8540,7 +8535,6 @@ snapshots:
       gopd: 1.2.0
       has-tostringtag: 1.0.2
       hasown: 2.0.2
-    optional: true
 
   is-stream@1.1.0:
     optional: true
@@ -8957,8 +8951,7 @@ snapshots:
   js-cookie@3.0.5:
     optional: true
 
-  js-stringify@1.0.2:
-    optional: true
+  js-stringify@1.0.2: {}
 
   js-tokens@4.0.0: {}
 
@@ -9010,7 +9003,6 @@ snapshots:
     dependencies:
       is-promise: 2.2.2
       promise: 7.3.1
-    optional: true
 
   juice@10.0.1:
     dependencies:
@@ -9934,7 +9926,6 @@ snapshots:
   promise@7.3.1:
     dependencies:
       asap: 2.0.6
-    optional: true
 
   prompts@2.4.2:
     dependencies:
@@ -9954,7 +9945,6 @@ snapshots:
       constantinople: 4.0.1
       js-stringify: 1.0.2
       pug-runtime: 3.0.1
-    optional: true
 
   pug-code-gen@3.0.3:
     dependencies:
@@ -9966,10 +9956,8 @@ snapshots:
       pug-runtime: 3.0.1
       void-elements: 3.1.0
       with: 7.0.2
-    optional: true
 
-  pug-error@2.1.0:
-    optional: true
+  pug-error@2.1.0: {}
 
   pug-filters@4.0.0:
     dependencies:
@@ -9978,43 +9966,35 @@ snapshots:
       pug-error: 2.1.0
       pug-walk: 2.0.0
       resolve: 1.22.10
-    optional: true
 
   pug-lexer@5.0.1:
     dependencies:
       character-parser: 2.2.0
       is-expression: 4.0.0
       pug-error: 2.1.0
-    optional: true
 
   pug-linker@4.0.0:
     dependencies:
       pug-error: 2.1.0
       pug-walk: 2.0.0
-    optional: true
 
   pug-load@3.0.0:
     dependencies:
       object-assign: 4.1.1
       pug-walk: 2.0.0
-    optional: true
 
   pug-parser@6.0.0:
     dependencies:
       pug-error: 2.1.0
       token-stream: 1.0.0
-    optional: true
 
-  pug-runtime@3.0.1:
-    optional: true
+  pug-runtime@3.0.1: {}
 
   pug-strip-comments@2.0.0:
     dependencies:
       pug-error: 2.1.0
-    optional: true
 
-  pug-walk@2.0.0:
-    optional: true
+  pug-walk@2.0.0: {}
 
   pug@3.0.3:
     dependencies:
@@ -10026,7 +10006,6 @@ snapshots:
       pug-parser: 6.0.0
       pug-runtime: 3.0.1
       pug-strip-comments: 2.0.0
-    optional: true
 
   punycode.js@2.3.1:
     optional: true
@@ -10482,8 +10461,7 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
-  token-stream@1.0.0:
-    optional: true
+  token-stream@1.0.0: {}
 
   token-types@6.1.1:
     dependencies:
@@ -10695,8 +10673,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  void-elements@3.1.0:
-    optional: true
+  void-elements@3.1.0: {}
 
   walker@1.0.8:
     dependencies:
@@ -10793,7 +10770,6 @@ snapshots:
       '@babel/types': 7.28.4
       assert-never: 1.4.0
       babel-walk: 3.0.0-canary-5
-    optional: true
 
   word-wrap@1.2.5: {}
 
