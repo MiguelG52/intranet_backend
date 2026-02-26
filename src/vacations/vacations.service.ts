@@ -386,7 +386,7 @@ export class VacationsService {
 
 
   async findAllRequests(query: QueryVacationRequestDto) {
-    const { status, userId, page = 1, limit = 10 } = query;
+    const { status, userId, search, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.requestRepository
@@ -404,6 +404,13 @@ export class VacationsService {
 
     if (userId) {
       queryBuilder.andWhere('request.userId = :userId', { userId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        "CONCAT(user.name, ' ', COALESCE(user.lastname, '')) ILIKE :search",
+        { search: `%${search}%` },
+      );
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();
