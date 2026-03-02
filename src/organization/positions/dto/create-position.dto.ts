@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreatePositionDto {
   @IsString({message:'El título del puesto debe ser una cadena de texto'})
@@ -13,6 +14,7 @@ export class CreatePositionDto {
   @IsOptional()
   description?: string;
 
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsUUID()
   @IsOptional() 
   managerId?: string;
