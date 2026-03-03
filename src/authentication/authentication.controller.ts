@@ -8,6 +8,8 @@ import { SignInDto } from './dto/sign-in.dto';
 import { RoleGuard } from './guard/role.guard';
 import { Roles } from './decorators/role.decoratos';
 import { Role } from './enum/role.enum';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 
 @Controller('auth')
@@ -40,6 +42,20 @@ export class AuthenticationController {
   @Post('refresh')
   async refreshToken(@Body('refreshToken') refreshToken: string) {
     return this.authenticationService.refreshToken(refreshToken);
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authenticationService.requestPasswordReset(dto.email);
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authenticationService.resetPassword(dto.token, dto.newPassword);
   }
   
   @Patch(':id')

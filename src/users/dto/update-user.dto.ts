@@ -7,11 +7,15 @@ export class UpdateUserAuthDto {
 
   @IsString()
   @IsOptional()
-  token2fa?: string;
+  passwordHash?: string;
+
+  @IsString()
+  @IsOptional()
+  token2fa?: string | null;
 
   @IsDate()
   @IsOptional()
-  token2faExpiresAt?: Date;
+  token2faExpiresAt?: Date | null;
 
   @IsBoolean()
   @IsOptional()

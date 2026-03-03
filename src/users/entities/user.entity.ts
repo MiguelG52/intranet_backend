@@ -40,7 +40,7 @@ export class User {
     roleId:string
 
     @Column({type:'varchar', length:255, nullable:true, name:'token_2fa'})
-    token2fa:string
+    token2fa: string | null;
 
     @Column({ name: 'token_2fa_expires_at', type: 'timestamp', nullable: true })
     token2faExpiresAt: Date | null;

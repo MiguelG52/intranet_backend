@@ -334,6 +334,13 @@ export class UsersService {
   }
 
   /**
+   * Busca un usuario por su token de restablecimiento de contraseña.
+   */
+  findOneByResetToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { token2fa: token } });
+  }
+
+  /**
    * Retorna la inforacion del usuario junto con su detalle, rol, pais. 
    * sin informacion sensible (password, token 2fa).
    */
@@ -368,6 +375,7 @@ export class UsersService {
     userId: string,
     updateDto: UpdateUserAuthDto,
   ): Promise<void> {
+
     const result = await this.userRepository.update(userId, updateDto);
     if (result.affected === 0) {
       throw new NotFoundException(`Usuario con ID '${userId}' no encontrado.`);

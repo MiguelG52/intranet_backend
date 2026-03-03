@@ -91,7 +91,7 @@ export class AuthenticationService {
     try {
       await this.mailerService.sendAccountVerificationEmail(
         newUser,
-        newUser.token2fa,
+        newUser.token2fa!,
         plainPassword,
       );
     } catch (emailError) {
@@ -121,7 +121,7 @@ export class AuthenticationService {
         token2fa: token,
         token2faExpiresAt: expires,
       });
-      // await this.mailerService.sendPasswordResetEmail(user.email, user.name, token);    
+      await this.mailerService.sendPasswordResetEmail(user, token);
       return { message: successMessage };
 
     } catch (error) {
@@ -129,6 +129,24 @@ export class AuthenticationService {
     }
 
     
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.UserService.findOneByResetToken(token);
+    if (!user || !user.token2faExpiresAt) {
+      throw new UnauthorizedException('El token de restablecimiento no es válido.');
+    }
+    if (new Date() > user.token2faExpiresAt) {
+      throw new UnauthorizedException('El token de restablecimiento ha expirado. Solicita uno nuevo.');
+    }
+    const hashedPassword = await hash(newPassword, 10);
+    await this.UserService.updateAuthFields(user.userId, {
+      passwordHash: hashedPassword,
+      token2fa: null,
+      token2faExpiresAt: null,
+      refreshToken: null,
+    });
+    return { message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' };
   }
 
   async refreshToken(token: string) {

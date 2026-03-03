@@ -101,7 +101,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(user: User, token: string) {
-    const resetUrl = `${this.frontendUrl}/reset-password?token=${token}`;
+    const resetUrl = `${this.frontendUrl}/recover-password?token=${token}`;
     const html = this.renderTemplate('reset-password', {
       name: user.name,
       resetUrl,

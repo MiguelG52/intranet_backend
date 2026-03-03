@@ -22,6 +22,7 @@ import { MethodologyModule } from './organization/methodology/methodology.module
 import { FormsModule } from './forms/forms.module';
 import { ProjectsModule } from './projects/projects.module';
 import { VacationsModule } from './vacations/vacations.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -45,7 +46,6 @@ import { VacationsModule } from './vacations/vacations.module';
       },
       inject: [ConfigService],
     }),
-
     ScheduleModule.forRoot(),
     CacheModule.register(),
     AuthenticationModule, 
